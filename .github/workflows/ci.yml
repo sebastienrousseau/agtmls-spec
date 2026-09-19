@@ -51,11 +51,41 @@ jobs:
             --rust .agtmls-core/target/release/agtmls-rs
 
   corpus-integrity:
-    name: corpus is well-formed
+    name: corpus is well-formed (${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The floor and ceiling the reference implementation supports: the
+        # corpus must parse on both, or it is not portable.
+        python-version: ["3.10", "3.14"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
       - run: ./conformance/validate-corpus.py
+      - run: python3 -m unittest discover -s tests
+
+  signatures:
+    name: commits are signed
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Verify
+        run: |
+          git config gpg.ssh.allowedSignersFile KEYS.asc
+          unsigned=0
+          # --no-merges: on a pull_request event HEAD is the synthetic merge
+          # commit GitHub creates, which no contributor signs.
+          for commit in $(git rev-list --no-merges origin/${{ github.base_ref }}..HEAD); do
+            status=$(git log -1 --format='%G?' "$commit")
+            if [ "$status" != "G" ] && [ "$status" != "U" ]; then
+              echo "::error::unsigned or unverifiable commit $commit (%G? = $status)"
+              unsigned=1
+            fi
+          done
+          test "$unsigned" -eq 0

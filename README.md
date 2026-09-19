@@ -13,6 +13,17 @@ finding. Without a single normative source and a shared corpus, that agreement
 decays quietly: a payload one implementation blocks becomes one another calls
 clean, and nobody notices until it matters.
 
+## Why this exists
+
+Four surfaces will need to agree about what a skill is: a CLI, a language
+server, an MCP server and a WASM module, across two implementation languages.
+Without a normative source and a shared corpus they agree only by coincidence,
+and the divergence shows up as a security hole — a payload one implementation
+blocks is one another calls clean, and because both still pass their own test
+suites, nothing reports a problem.
+
+This repository has **no runtime code**. It is the arbiter.
+
 ## What is normative here
 
 | Document | Defines |
@@ -73,6 +84,14 @@ build failure** — the point of a conformance claim is that it is checked.
 Both are replayed against this corpus in CI. **If they disagree, both builds
 fail.** That is the mechanism that keeps two implementations from becoming two
 products.
+
+## What this does not specify
+
+**Routing.** How an agent decides which skill to load is a model behaviour,
+not a wire format. Freezing a guess about it into a specification would be
+worse than saying nothing, and it is the part most likely to change.
+
+**Skill content.** This says what a skill *is*, not what a good one contains.
 
 ## Versioning
 
