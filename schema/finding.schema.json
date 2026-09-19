@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sebastienrousseau/agtmls-spec/schema/finding.schema.json",
+  "title": "AgtMLS analysis finding",
+  "description": "One finding emitted by a conformant analyzer. Every finding carries a stable rule identifier: suppressions, SARIF export and cross-implementation comparison all key on the rule, never on the prose message.",
+  "type": "object",
+  "required": ["file", "line", "severity", "category", "rule", "message"],
+  "additionalProperties": false,
+  "properties": {
+    "file": { "type": "string", "description": "Path, POSIX-separated, relative to the audited root where possible." },
+    "line": { "type": "integer", "minimum": 1, "description": "1-indexed SOURCE line. Normalised-scope rules match a flattened document but must report a real source line (spec 4.3)." },
+    "severity": { "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"] },
+    "category": { "type": "string", "pattern": "^[a-z_]+$" },
+    "rule": { "type": "string", "pattern": "^AGT-[A-Z]+-[0-9]{3}$" },
+    "message": { "type": "string", "minLength": 1 },
+    "suppressed_by": { "type": "string", "description": "Digest-keyed suppression entry that silenced this finding, when reporting suppressed findings." }
+  }
+}

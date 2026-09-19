@@ -1,0 +1,59 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+id = "AGT-STEG-001"
+category = "steganography"
+severity = "critical"
+title = "Invisible code point"
+kind = "structural"
+scope = "raw"
+applies_to = ["*"]
+
+description = '''A code point that renders as nothing but survives into the prompt. The
+author cannot see it; the model can.'''
+
+# Expressed as DATA, not a regex, on purpose. Python's `re` accepts \uXXXX and
+# Rust's `regex` accepts \u{XXXX}; neither accepts the other's spelling. A shared
+# regex would therefore have to embed the characters literally, making this file
+# unreadable, unmaintainable, and a trigger for its own rule. Each implementation
+# builds its own matcher from this list; the corpus proves they agree, which is
+# the property that matters.
+
+code_points = [
+  { cp = "U+00AD", name = "Soft hyphen" },
+  { cp = "U+034F", name = "Combining grapheme joiner" },
+  { cp = "U+061C", name = "Arabic letter mark" },
+  { cp = "U+115F", name = "Hangul choseong filler" },
+  { cp = "U+1160", name = "Hangul jungseong filler" },
+  { cp = "U+17B4", name = "Khmer vowel inherent AQ" },
+  { cp = "U+17B5", name = "Khmer vowel inherent AA" },
+  { cp = "U+180E", name = "Mongolian vowel separator" },
+  { cp = "U+200B", name = "Zero-width space" },
+  { cp = "U+200C", name = "Zero-width non-joiner" },
+  { cp = "U+200D", name = "Zero-width joiner" },
+  { cp = "U+200E", name = "Left-to-right mark" },
+  { cp = "U+200F", name = "Right-to-left mark" },
+  { cp = "U+202A", name = "Left-to-right embedding" },
+  { cp = "U+202B", name = "Right-to-left embedding" },
+  { cp = "U+202C", name = "Pop directional formatting" },
+  { cp = "U+202D", name = "Left-to-right override" },
+  { cp = "U+202E", name = "Right-to-left override" },
+  { cp = "U+2060", name = "Word joiner" },
+  { cp = "U+2061", name = "Function application" },
+  { cp = "U+2062", name = "Invisible times" },
+  { cp = "U+2063", name = "Invisible separator" },
+  { cp = "U+2064", name = "Invisible plus" },
+  { cp = "U+2066", name = "Left-to-right isolate" },
+  { cp = "U+2067", name = "Right-to-left isolate" },
+  { cp = "U+2068", name = "First strong isolate" },
+  { cp = "U+2069", name = "Pop directional isolate" },
+  { cp = "U+3164", name = "Hangul filler" },
+  { cp = "U+FEFF", name = "Zero-width no-break space" },
+  { cp = "U+FFA0", name = "Halfwidth hangul filler" },
+]
+
+# Ranges the enumeration cannot practically cover.
+code_point_ranges = [
+  { from = "U+FE00",  to = "U+FE0F",  name = "Variation selectors", note = "The dominant 2025-26 smuggling channel: one nibble per code point." },
+  { from = "U+E0000", to = "U+E007F", name = "Unicode tag block",  note = "Deprecated tag characters, revived as a covert channel." },
+]

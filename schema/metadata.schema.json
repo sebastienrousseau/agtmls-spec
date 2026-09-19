@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sebastienrousseau/agtmls-spec/schema/metadata.schema.json",
+  "title": "AgtMLS skill metadata.json",
+  "type": "object",
+  "required": ["bundle", "version", "owner", "maturity", "supported_agents", "required_tools", "safety_policy"],
+  "properties": {
+    "bundle": { "type": ["string", "null"], "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$", "description": "Bundle membership is a FIELD, not a parent directory: the skill tree is flat because runtimes scan it non-recursively. null means a general skill." },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "owner": { "type": "string", "minLength": 1 },
+    "maturity": { "enum": ["draft", "hardened", "project", "deprecated"] },
+    "supported_agents": { "type": "array", "items": { "enum": ["claude", "codex", "aider"] } },
+    "required_tools": { "type": "array", "items": { "type": "string" } },
+    "safety_policy": {
+      "type": "object",
+      "description": "What the skill claims it does. AGT-CAP-001 checks these against the tools SKILL.md frontmatter actually grants; AGT-POLICY-* checks them against the prose. A policy nobody verified is not an attestation.",
+      "required": ["network_access", "writes_files", "executes_commands", "handles_secrets", "requires_human_review", "risk_level"],
+      "properties": {
+        "network_access": { "enum": ["none", "optional", "required"] },
+        "writes_files": { "type": "boolean" },
+        "executes_commands": { "type": "boolean" },
+        "handles_secrets": { "type": "boolean" },
+        "requires_human_review": { "type": "boolean" },
+        "risk_level": { "enum": ["low", "medium", "high"] }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "description": "Present on imported skills. Records that the declared policy is a placeholder set by the importer, not a claim anyone verified.",
+      "properties": {
+        "imported_from": { "type": "string" },
+        "attested": { "type": "boolean" },
+        "audit_findings": { "type": "array", "items": { "$ref": "finding.schema.json" } },
+        "source_metadata": { "type": ["string", "null"] },
+        "review_required": { "type": "string" }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "safety_policy": { "properties": { "risk_level": { "const": "high" } } } } },
+      "then": { "properties": { "safety_policy": { "properties": { "requires_human_review": { "const": true } } } } },
+      "description": "A high-risk skill that does not require review is a contradiction."
+    }
+  ]
+}

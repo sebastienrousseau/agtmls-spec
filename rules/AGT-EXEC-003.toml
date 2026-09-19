@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-EXEC-003"
+category = "unsafe_execution"
+severity = "high"
+title = "Credential access"
+scope = "normalised"
+applies_to = ["*.md", "*.sh", "*.bash", "*.py", "*.js", "executable"]
+
+description = '''Attempt to read or exfiltrate private credentials (~/.ssh, ~/.aws, /etc/shadow)'''
+rationale = '''Reading or copying private key material and credential stores.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)(?:cat|head|tail|cp|curl|scp)\s+.*(?:~/\.ssh|~/\.aws|~/\.gnupg|/etc/shadow|/etc/passwd)\b'''
+
+[[true_positive]]
+text = '''cat ~/.ssh/id_rsa'''
+
+[[false_positive]]
+text = '''Add your key to ~/.ssh/config by hand.'''
+note = "Prose about the pattern, not an instance of it. A rule with no known false positive has not been tested against reality."

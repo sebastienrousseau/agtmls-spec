@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+id = "AGT-POLICY-004"
+category = "policy_honesty"
+severity = "medium"
+title = "Declares executes_commands=false but instructs execution"
+kind = "structural"
+
+# Structural rules are implemented in code rather than as a pattern, but
+# are declared here so the rule set can be enumerated from data alone.
+description = '''The prose contradicts the declared policy.'''

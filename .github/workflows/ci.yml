@@ -1,0 +1,57 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The spec is only as good as the implementations that pass it, so this
+  # repository's CI tests OTHER repositories. A spec change that breaks a
+  # conformant implementation must fail here, not there.
+  implementations:
+    name: every implementation still conforms
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: sebastienrousseau/agtmls
+          path: .agtmls
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: sebastienrousseau/agtmls-core
+          path: .agtmls-core
+      - uses: actions/setup-python@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master
+        with:
+          toolchain: stable
+      - name: Build the Rust implementation
+        run: cargo build --release -p agtmls-cli --manifest-path .agtmls-core/Cargo.toml
+      - name: Differential conformance
+        run: |
+          ./conformance/run.py \
+            --python .agtmls \
+            --rust .agtmls-core/target/release/agtmls-rs
+
+  corpus-integrity:
+    name: corpus is well-formed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          python-version: "3.12"
+      - run: ./conformance/validate-corpus.py

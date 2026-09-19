@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sebastienrousseau/agtmls-spec/schema/lockfile.schema.json",
+  "title": "AgtMLS install lockfile (.agtmls/manifest.json)",
+  "type": "object",
+  "required": ["schema_version", "spec_version", "installed_at", "source", "mode", "skills"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "spec_version": { "type": "string" },
+    "installed_at": { "type": "string", "format": "date-time" },
+    "source": {
+      "type": "object",
+      "required": ["registry", "registry_version"],
+      "properties": {
+        "registry": { "type": "string", "format": "uri" },
+        "registry_version": { "type": "string" }
+      }
+    },
+    "mode": { "enum": ["symlink", "copy"] },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "integrity", "path"],
+        "properties": {
+          "name": { "type": "string" },
+          "integrity": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+          "path": { "type": "string" },
+          "executable_files": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Mode bits are excluded from the digest by design (spec 3.4) because they do not survive every transport. Recorded here so a lost executable bit can be repaired without being mistaken for tampering."
+          }
+        }
+      }
+    }
+  }
+}

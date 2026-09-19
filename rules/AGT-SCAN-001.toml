@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+id = "AGT-SCAN-001"
+category = "scan_limit"
+severity = "medium"
+title = "File not analysed"
+kind = "structural"
+
+# Structural rules are implemented in code rather than as a pattern, but
+# are declared here so the rule set can be enumerated from data alone.
+description = '''The file exceeded the analyzer's size cap or could not be read. Reported rather than skipped silently: an unscanned file is not a clean file.'''
