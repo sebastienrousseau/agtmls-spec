@@ -52,7 +52,7 @@
     },
     {
       "directories": [],
-      "expected_digest": "sha256:7541c174dbd3fac5247578b7ca4a88a9d0fd991ad6e377c969df339af62cd2f2",
+      "expected_digest": "sha256:af049efb0f66818c7bdc2a66909ebabc32db2909239722d23984a4434e88ae15",
       "expected_manifest": [
         {
           "path": "1.md",
@@ -60,11 +60,15 @@
         },
         {
           "path": "A.md",
-          "sha256": "b908e4daaf9d57fe9cb551a689a35c9a9e0fac85fdf11faaa0a1ba0e5efc06fd"
+          "sha256": "87428fc522803d31065e7bce3cf03fe475096631e5e07bbd7a0fde60c4cf25c7"
         },
         {
           "path": "_.md",
           "sha256": "50f72fe4b0518fbb2b949be0104c6baaf92c7c622e91e67c28bb1475dc7a470b"
+        },
+        {
+          "path": "aa.md",
+          "sha256": "b908e4daaf9d57fe9cb551a689a35c9a9e0fac85fdf11faaa0a1ba0e5efc06fd"
         }
       ],
       "expected_reported_symlinks": [],
@@ -72,11 +76,11 @@
         "1.md": "one\n",
         "A.md": "a\n",
         "_.md": "us\n",
-        "a.md": "lower\n"
+        "aa.md": "lower\n"
       },
       "name": "ordering-digits-vs-letters",
       "symlinks": {},
-      "why": "spec 3.7: byte order puts digits before uppercase before lowercase."
+      "why": "spec 3.7: byte order puts digits before uppercase before lowercase. Deliberately avoids a name that differs only by case, which a case-insensitive filesystem merges into one file."
     },
     {
       "directories": [],
