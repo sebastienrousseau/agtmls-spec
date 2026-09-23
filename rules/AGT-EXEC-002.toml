@@ -17,10 +17,15 @@ rationale = '''Recursive deletion of /.'''
 # (?i) is inline, not a host-language compile flag: the flag would not
 # survive export and the two implementations would disagree on case.
 # scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
-pattern = '''(?i)\brm\s+-[a-z]*r[a-z]*f\s+/(?:\s|$|\*)'''
+# The flags in either order: `rm -fr /` walked past the original, which
+# required r before f.
+pattern = '''(?i)\brm\s+-[a-z]*(?:r[a-z]*f|f[a-z]*r)[a-z]*\s+/(?:\s|$|\*)'''
 
 [[true_positive]]
 text = '''rm -rf /'''
+
+[[true_positive]]
+text = '''rm -fr /*'''
 
 [[false_positive]]
 text = '''rm -rf ./build'''

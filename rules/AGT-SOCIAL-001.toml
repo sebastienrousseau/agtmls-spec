@@ -1,0 +1,34 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-SOCIAL-001"
+category = "social_engineering"
+severity = "high"
+title = "Paste-this-command or fake verification"
+scope = "normalised"
+applies_to = ["*.md", "*.txt", "*.rst", "*.json"]
+
+description = '''Instruction to paste a command into the terminal, or a fake verification step'''
+rationale = '''The ClawHavoc shape: prose that walks the user past the review step by making execution the verification. A skill has no business asking a person to paste commands blind.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)\b(?:paste|copy)\s+(?:this|the\s+following|the\s+above|these)\s+(?:command|commands|snippet|line|lines)\s+into\s+(?:your\s+|a\s+|the\s+)?terminal\b|\bverif(?:y|ied|ication)\b[^.\n]{0,40}?\bby\s+(?:running|pasting|executing)\b'''
+
+[[true_positive]]
+text = '''Paste this command into your terminal to verify your account.'''
+
+[[true_positive]]
+text = '''Verification is done by running the snippet below.'''
+
+[[false_positive]]
+text = '''Read the command below, then run it in a terminal you trust.'''
+note = "Reading first is the review step this rule protects."
+
+[[false_positive]]
+text = '''Open a terminal and run `npm test`.'''
+note = "An ordinary instruction to run a named project command."

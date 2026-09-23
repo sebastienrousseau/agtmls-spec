@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-EXEC-007"
+category = "unsafe_execution"
+severity = "high"
+title = "Model output interpolated into a shell string"
+scope = "normalised"
+applies_to = ["*.js", "*.mjs", "*.cjs", "*.ts", "*.py", "*.rb", "*.sh", "*.md"]
+
+description = '''Model or LLM output interpolated into a shell command string (execSync(`... ${...}`), os.system(f"... {...}"))'''
+rationale = '''A shell command built from text a model produced is a command the model can write. Seen in a published tool that ran execSync(`git commit -m "${message}"`) with the model's message.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)\b(?:execSync|exec|spawnSync|system|os\.system|subprocess\.(?:run|call|check_output))\(\s*(?:`[^`\n]*\$\{|f"[^"\n]*\{|f'[^'\n]*\{|"[^"\n]*"\s*\+\s*\w)'''
+
+[[true_positive]]
+text = '''execSync(`git commit -m "${message}"`)'''
+
+[[true_positive]]
+text = '''os.system(f"git commit -m {msg}")'''
+
+[[true_positive]]
+text = '''exec("rm -rf " + target)'''
+
+[[false_positive]]
+text = '''execSync("git status")'''
+note = "A fixed command interpolates nothing."
+
+[[false_positive]]
+text = '''subprocess.run(["git", "commit", "-m", message])'''
+note = "An argument list is not a shell string."
+
+# Rust's regex has no lookaround, so the pattern names the call sites it
+# knows rather than any call whose argument interpolates. Add call sites
+# here, with an example, rather than widening the argument match.

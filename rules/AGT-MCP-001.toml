@@ -1,0 +1,34 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-MCP-001"
+category = "mcp_tools"
+severity = "high"
+title = "MCP tool that runs arbitrary commands"
+scope = "normalised"
+applies_to = ["*.json", "*.md", "*.yaml", "*.yml", "*.toml"]
+
+description = '''MCP tool that runs arbitrary commands (terminal_execute, exec, run_command, shell with a free-form string)'''
+rationale = '''A tool whose input is a command string gives the model a shell with the server's rights. Seen in a published MCP server that exposed terminal_execute to every connected agent.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)"name"\s*:\s*"(?:terminal_execute|execute_command|run_command|run_shell(?:_command)?|shell_exec|exec|shell|bash|system)"'''
+
+[[true_positive]]
+text = '''{"name": "terminal_execute", "description": "Run a command", "inputSchema": {"type": "object"}}'''
+
+[[true_positive]]
+text = '''"name": "run_command"'''
+
+[[false_positive]]
+text = '''{"name": "list_files", "description": "List a directory"}'''
+note = "A tool with a bounded contract."
+
+[[false_positive]]
+text = '''"name": "execute_query"'''
+note = "A name that starts like exec but is a database query."
