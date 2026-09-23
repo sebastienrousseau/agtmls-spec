@@ -118,3 +118,52 @@ the cheapest way to pass every policy check.
 
 An implementation MUST treat absent or unreadable policy as a HIGH finding.
 Absence of evidence is not evidence of safety.
+
+## 4.10 `AGT-CAP-001`: reading `allowed-tools`
+
+`AGT-CAP-001` compares the tools a `SKILL.md` frontmatter grants with the
+capabilities `metadata.json` `safety_policy` admits to. Every implementation
+MUST read the grant the same way, or the rule fires in one and not another.
+
+**Locating the field.** The value is the remainder of the first frontmatter
+line that begins `allowed-tools:`, with any leading spaces and tabs removed.
+A skill with no frontmatter, or no such line, grants no tools.
+
+**Tokenising.** An implementation MUST split the value into tools exactly as
+this pattern's successive non-overlapping matches do, left to right:
+
+```text
+[^\s,()'"\[\]]+(?:\([^)]*\))?
+```
+
+where `\s` includes `0x1C`–`0x1F` (as Python's does; add them explicitly in
+an engine whose `\s` does not). In words:
+
+1. Whitespace **and** commas separate tools. The Agent Skills form is
+   space-separated — `allowed-tools: "Read Glob Bash"` — and MUST yield
+   `Read`, `Glob`, `Bash`. A comma-separated or mixed value yields the same.
+2. Single quotes, double quotes and YAML flow-list brackets are never part of
+   a tool: `allowed-tools: [Bash, 'Read']` yields `Bash`, `Read`.
+3. A tool MAY carry a parenthesised specifier, which stays part of its token
+   even when it contains spaces: `Bash(git log:*)` is one tool. An opening
+   parenthesis with no closing one ends the token before it.
+
+**Capability lookup.** A tool's capability is looked up by the part of the
+token before its first `(`, so `Bash(git log:*)` narrows `Bash` and still
+grants `executes_commands`. Tools absent from this table grant nothing:
+
+| Tool | Capability | Granted when `safety_policy` has |
+| :--- | :--- | :--- |
+| `Bash`, `BashOutput`, `KillShell` | `executes_commands` | `executes_commands: true` |
+| `Write`, `Edit`, `NotebookEdit` | `writes_files` | `writes_files: true` |
+| `WebFetch`, `WebSearch` | `network_access` | `network_access` of `optional` or `required` |
+
+Each granted tool whose capability the policy does not grant is one
+`AGT-CAP-001` finding.
+
+Splitting on commas alone is the defect this section exists to prevent. It
+returned `"Read Glob Bash"` as a single tool of that name, which is in no
+table and grants nothing, so the rule could not fire on any skill written in
+the spec's own form. Both implementations passed the corpus while it
+contained only a comma-separated case; `corpus/security/` now carries the
+space-separated, quoted, flow-list and scoped forms.
