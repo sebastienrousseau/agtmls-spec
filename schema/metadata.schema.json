@@ -13,7 +13,7 @@
     "required_tools": { "type": "array", "items": { "type": "string" } },
     "safety_policy": {
       "type": "object",
-      "description": "What the skill claims it does. AGT-CAP-001 checks these against the tools SKILL.md frontmatter actually grants; AGT-POLICY-* checks them against the prose. A policy nobody verified is not an attestation.",
+      "description": "What the skill claims it does. AGT-CAP-001 checks these against the tools SKILL.md frontmatter actually grants, read from allowed-tools as spec/04-rules.md section 4.10 tokenises it; AGT-POLICY-* checks them against the prose. A policy nobody verified is not an attestation.",
       "required": ["network_access", "writes_files", "executes_commands", "handles_secrets", "requires_human_review", "risk_level"],
       "properties": {
         "network_access": { "enum": ["none", "optional", "required"] },

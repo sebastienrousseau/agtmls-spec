@@ -9,4 +9,4 @@ kind = "structural"
 
 # Structural rules are implemented in code rather than as a pattern, but
 # are declared here so the rule set can be enumerated from data alone.
-description = '''SKILL.md frontmatter grants a tool whose capability metadata.json safety_policy denies. The runtime honours the frontmatter, so the disagreement is the escalation.'''
+description = '''SKILL.md frontmatter grants a tool whose capability metadata.json safety_policy denies. The runtime honours the frontmatter, so the disagreement is the escalation. allowed-tools is split on whitespace and commas, ignoring quotes and [...] brackets, with a parenthesised specifier kept in its token (spec 4.10).'''

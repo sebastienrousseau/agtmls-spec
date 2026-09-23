@@ -8,6 +8,10 @@ reviewed as the authority.
 
 metadata.json: `bundle`, `version`, `owner`, `maturity`, `supported_agents`, `required_tools`, `safety_policy`. The `safety_policy` block is what `AGT-CAP-001` and `AGT-POLICY-*` check against, and what `allowed-tools` frontmatter is derived from.
 
+`allowed-tools` is space- or comma-separated (`allowed-tools: "Read Glob Bash"`);
+how it is tokenised, and which tools grant which capability, is normative in
+[04-rules.md §4.10](04-rules.md#410-agt-cap-001-reading-allowed-tools).
+
 Where this document and the reference implementation disagree, **the
 implementation is currently correct and this document is the defect**. That
 asymmetry ends when this document is marked normative, which requires a corpus
