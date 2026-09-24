@@ -11,6 +11,12 @@ including after withdrawal.
 
 ### Added
 
+- `09-signatures.md` (draft): `index.json` signed with an OpenSSH `SSHSIG`
+  under the namespace `agtmls-index@v1`, keys in `allowed_signers` with
+  `valid-after`/`valid-before` rotation, and exit codes `4` unsigned, `5`
+  bad signature, `6` revoked (reserved). Eight vectors in
+  `corpus/signatures/`, checked against `ssh-keygen -Y verify` in CI by
+  `validate-signatures.py`; the keys' private halves were discarded.
 - §4.11 defines `applies_to`: a pattern rule runs only on files a
   selector matches, and a selector is `*`, `*.<ext>` or `executable` (a file
   beginning with `#!`). `validate-corpus.py` rejects any other form. Four

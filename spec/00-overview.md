@@ -39,6 +39,7 @@ a suggestion.
 | [`05-index.md`](05-index.md) | Draft — derived from the reference implementation |
 | [`06-lockfile.md`](06-lockfile.md) | **Normative**, with L4 conformance |
 | [`07-conformance.md`](07-conformance.md) | **Normative** |
+| [`09-signatures.md`](09-signatures.md) | Draft — no verifier yet; vectors in `corpus/signatures/` |
 
 "Draft" means the behaviour is real and implemented, but this document has not
 yet been reviewed as the authority. Where a draft document and the reference
