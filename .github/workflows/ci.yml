@@ -63,6 +63,7 @@ jobs:
       - run: ./conformance/validate-corpus.py
       - run: ./conformance/validate-signatures.py
       - run: ./conformance/validate-attestations.py
+      - run: ./conformance/validate-advisories.py
       - run: python3 -m unittest discover -s tests
 
   signatures:

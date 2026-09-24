@@ -41,6 +41,7 @@ a suggestion.
 | [`07-conformance.md`](07-conformance.md) | **Normative** |
 | [`09-signatures.md`](09-signatures.md) | Draft — no verifier yet; vectors in `corpus/signatures/` |
 | [`10-attestations.md`](10-attestations.md) | Draft — no emitter yet; vectors in `corpus/attestations/` |
+| [`11-advisories.md`](11-advisories.md) | Draft — no verifier yet; vectors in `corpus/advisories/` |
 
 "Draft" means the behaviour is real and implemented, but this document has not
 yet been reviewed as the authority. Where a draft document and the reference
