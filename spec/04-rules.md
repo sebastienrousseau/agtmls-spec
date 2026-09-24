@@ -52,6 +52,15 @@ evaded: an attacker inserts a newline mid-phrase and every line-scoped rule
 misses it. The reference implementation shipped with all rules line-scoped,
 and a payload split across two lines passed a strict audit cleanly.
 
+For a file whose name ends in `.json`, compared case-insensitively, an
+implementation MUST decode JSON string escapes before collapsing whitespace:
+`\"`, `\\`, `\/` and `\uXXXX` become the character they encode, a
+surrogate pair becomes one code point and a lone surrogate becomes U+FFFD;
+`\n`, `\r`, `\t`, `\b` and `\f`, and any decoded line terminator, become a
+single space. A model reads a tool description after it is decoded, so
+`Ignore previous\n instructions` in a JSON file is the phrase, not two
+fragments. Decoding never creates a line, so source line numbers survive.
+
 Findings MUST still report a **source line number**, not an offset into the
 normalised text. An implementation SHOULD build the mapping lazily, once a
 pattern has matched, since almost every file is clean.

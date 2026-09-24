@@ -45,6 +45,11 @@ including after withdrawal.
 
 ### Fixed
 
+- JSON string escapes hid a phrase from every normalised rule: `Ignore
+  previous\n instructions` in a tool description never flattened to
+  adjacent words, while the model reads it decoded. §4.3 requires `*.json`
+  files be escape-decoded before whitespace is collapsed, with escaped
+  whitespace becoming a space so line numbers survive. Two corpus cases.
 - The injection rules applied to Markdown, text and executables only, so
   an instruction override inside a JSON MCP tool description was out of
   scope. They apply to every file now, and the execution, payload,
