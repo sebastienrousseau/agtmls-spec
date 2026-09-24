@@ -11,6 +11,15 @@ including after withdrawal.
 
 ### Added
 
+- `10-attestations.md` (draft): per-skill in-toto Statements whose subject
+  is the skill digest. A manifest predicate (the §3.1 file list, so the
+  digest can be recomputed and the differing file named), a capabilities
+  predicate (declared policy, granted tools, escalations), and a reserved
+  audit predicate. Canonical rendering, written outside the skill,
+  signed under `agtmls-attestation@v1`. Four vectors derived from the
+  digest corpus and policy fixtures, checked byte for byte in CI.
+- `AGT-CAP-001` carries the tool-to-capability table as data
+  (`[tool_capabilities]`), which both implementations kept as copies.
 - `09-signatures.md` (draft): `index.json` signed with an OpenSSH `SSHSIG`
   under the namespace `agtmls-index@v1`, keys in `allowed_signers` with
   `valid-after`/`valid-before` rotation, and exit codes `4` unsigned, `5`

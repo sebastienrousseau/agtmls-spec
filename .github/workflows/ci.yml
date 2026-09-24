@@ -62,6 +62,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: ./conformance/validate-corpus.py
       - run: ./conformance/validate-signatures.py
+      - run: ./conformance/validate-attestations.py
       - run: python3 -m unittest discover -s tests
 
   signatures:
