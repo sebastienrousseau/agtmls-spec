@@ -9,7 +9,7 @@ category = "prompt_injection"
 severity = "high"
 title = "DAN exploit phrase"
 scope = "normalised"
-applies_to = ["*.md", "*.txt", "executable"]
+applies_to = ["*"]
 
 description = '''DAN exploit pattern ('do anything now')'''
 rationale = '''The 'do anything now' trigger phrase.'''

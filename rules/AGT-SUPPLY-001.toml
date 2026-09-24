@@ -9,7 +9,7 @@ category = "supply_chain"
 severity = "medium"
 title = "Unpinned package runner"
 scope = "normalised"
-applies_to = ["*.md", "*.sh", "*.bash", "*.json", "*.yaml", "*.yml", "executable"]
+applies_to = ["*.md", "*.sh", "*.bash", "*.json", "*.yaml", "*.yml", "*.toml", "executable"]
 
 description = '''Unpinned package runner (npx -y, bunx, uvx, pipx run, pnpm dlx) with no exact version, or npx ...@latest'''
 rationale = '''A runner that fetches without a version executes whatever the registry serves at that moment; a compromised or renamed package runs with the agent's rights. Seen 957 times in one published plugin. bunx, uvx, pipx run and pnpm dlx always fetch; npx fetches without asking only with -y or --yes, and `npx jest` runs the project's own binary. Pin to an exact version.'''

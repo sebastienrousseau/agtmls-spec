@@ -9,7 +9,7 @@ category = "unsafe_execution"
 severity = "high"
 title = "Reverse shell"
 scope = "normalised"
-applies_to = ["*.md", "*.sh", "*.bash", "*.py", "*.js", "executable"]
+applies_to = ["*.md", "*.sh", "*.bash", "*.zsh", "*.py", "*.js", "*.mjs", "*.cjs", "*.ts", "*.rb", "*.json", "*.yaml", "*.yml", "*.toml", "executable"]
 
 description = '''Reverse shell or raw network socket manipulation'''
 rationale = '''Raw socket redirection or netcat exec: an interactive channel out of the host.'''

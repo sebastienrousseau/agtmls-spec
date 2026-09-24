@@ -9,7 +9,7 @@ category = "unsafe_execution"
 severity = "high"
 title = "Credential access"
 scope = "normalised"
-applies_to = ["*.md", "*.sh", "*.bash", "*.py", "*.js", "executable"]
+applies_to = ["*.md", "*.sh", "*.bash", "*.zsh", "*.py", "*.js", "*.mjs", "*.cjs", "*.ts", "*.rb", "*.json", "*.yaml", "*.yml", "*.toml", "executable"]
 
 description = '''Attempt to read or exfiltrate private credentials (~/.ssh, ~/.aws, /etc/shadow)'''
 rationale = '''Reading or copying private key material and credential stores.'''

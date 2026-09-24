@@ -37,6 +37,11 @@ def main() -> int:
             errors.append(f"{path.name}: id {rule_id!r} does not match filename")
         if not re.match(r"^AGT-[A-Z]+-\d{3}$", rule_id):
             errors.append(f"{rule_id}: identifier does not match AGT-<CLASS>-<NNN>")
+        selectors = re.search(r"^applies_to = (\[.*\])$", text, re.MULTILINE)
+        if selectors:
+            for selector in json.loads(selectors.group(1)):
+                if not re.fullmatch(r"\*|\*\.[A-Za-z0-9]+|executable", selector):
+                    errors.append(f"{rule_id}: applies_to selector {selector!r} is not *, *.<ext> or executable (spec 4.11)")
         if "pattern = '''" in text:
             pattern = re.search(r"^pattern = '''(.*?)'''", text, re.MULTILINE | re.DOTALL).group(1)
             if not pattern.startswith("(?i)"):

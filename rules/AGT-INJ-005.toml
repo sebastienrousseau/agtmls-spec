@@ -9,7 +9,7 @@ category = "prompt_injection"
 severity = "high"
 title = "Guardrail bypass"
 scope = "normalised"
-applies_to = ["*.md", "*.txt", "executable"]
+applies_to = ["*"]
 
 description = '''Safety guardrail bypass attempt'''
 rationale = '''An explicit instruction to bypass safety controls.'''

@@ -9,7 +9,7 @@ category = "selection_gaming"
 severity = "medium"
 title = "Description stuffing or authority framing"
 scope = "normalised"
-applies_to = ["*.md", "*.json"]
+applies_to = ["*.md", "*.json", "*.yaml", "*.yml", "*.toml"]
 
 description = '''Skill description that games selection: 'always use this skill first', 'official', keyword stuffing'''
 rationale = '''A router picks skills by description. A description that claims priority or authority is optimising for being chosen, not for describing what it does, and crowds out the skill that fits.'''
