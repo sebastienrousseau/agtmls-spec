@@ -124,3 +124,25 @@ the cheapest way to pass every policy check.
 
 An implementation MUST treat absent or unreadable policy as a HIGH finding.
 Absence of evidence is not evidence of safety.
+
+## 4.10 Emoji context
+
+`AGT-STEG-001` treats every variation selector and every tag character as a
+channel. Two sequences are not: a selector directly after an
+emoji-presentation base, which is how a keycap or a coloured symbol is
+written, and a well-formed subdivision flag, which is a tag sequence by
+design. Both are declared as data on `AGT-STEG-001` (`emoji_context`), and
+an implementation MUST decide from that data alone.
+
+A selector in `emoji_context.selectors` directly after a base in
+`base_points` or `base_ranges`, and not followed by another selector, MUST be
+reported as `AGT-STEG-002` (LOW) and MUST NOT be reported as `AGT-STEG-001`.
+An implementation MAY report it only in a pedantic mode, and MUST be silent
+about it otherwise. A run of two or more selectors, a selector after any
+other character, and every code point in the supplement range remain
+`AGT-STEG-001`.
+
+A tag sequence that is exactly `subdivision_flag.base`, one or more tags in
+`[tags_from, tags_to]`, then `terminator`, MUST be reported as `AGT-STEG-002`
+(LOW), always. Any other tag character remains `AGT-STEG-001`.
+

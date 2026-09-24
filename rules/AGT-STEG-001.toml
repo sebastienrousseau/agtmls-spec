@@ -56,4 +56,37 @@ code_points = [
 code_point_ranges = [
   { from = "U+FE00",  to = "U+FE0F",  name = "Variation selectors", note = "The dominant 2025-26 smuggling channel: one nibble per code point." },
   { from = "U+E0000", to = "U+E007F", name = "Unicode tag block",  note = "Deprecated tag characters, revived as a covert channel." },
+  { from = "U+E0100", to = "U+E01EF", name = "Variation selectors supplement", note = "Never an emoji presentation; always a channel." },
 ]
+
+# What makes a selector or a tag sequence benign. Data, so both
+# implementations draw the line in the same place; see 04-rules.md 4.10.
+#
+# A selector in `selectors` directly after a base in `base_points` or
+# `base_ranges`, and not followed by another selector, is how a keycap or a
+# coloured symbol is written. It is AGT-STEG-002, and an implementation
+# reports it only in a pedantic mode. Everything else in the selector ranges
+# stays AGT-STEG-001: a selector after any other character, a run of two or
+# more, and the whole supplement.
+#
+# A tag sequence that is exactly `subdivision_flag.base`, one or more tags in
+# [tags_from, tags_to], then `terminator`, is a regional flag. It is
+# AGT-STEG-002 at LOW, always reported. Any other tag character stays
+# AGT-STEG-001.
+[emoji_context]
+selectors = { from = "U+FE0E", to = "U+FE0F" }
+keycap = "U+20E3"
+base_points = ["U+0023", "U+002A", "U+0030", "U+0031", "U+0032", "U+0033", "U+0034", "U+0035", "U+0036", "U+0037", "U+0038", "U+0039"]
+base_ranges = [
+  { from = "U+2190",  to = "U+21FF",  name = "Arrows" },
+  { from = "U+2300",  to = "U+23FF",  name = "Miscellaneous technical" },
+  { from = "U+2600",  to = "U+27BF",  name = "Miscellaneous symbols and dingbats" },
+  { from = "U+2B00",  to = "U+2BFF",  name = "Miscellaneous symbols and arrows" },
+  { from = "U+1F000", to = "U+1FAFF", name = "Emoji blocks" },
+]
+
+[emoji_context.subdivision_flag]
+base = "U+1F3F4"
+tags_from = "U+E0061"
+tags_to = "U+E007A"
+terminator = "U+E007F"

@@ -11,6 +11,12 @@ including after withdrawal.
 
 ### Added
 
+- `AGT-STEG-002` (LOW) and an `emoji_context` table on `AGT-STEG-001`:
+  a variation selector directly after an emoji-presentation base, and a
+  well-formed subdivision flag, are an emoji as written rather than a
+  channel. §4.10 says how an implementation decides from that data.
+  The variation selectors supplement (U+E0100 to U+E01EF) joins the
+  ranges. Seven corpus cases.
 - Eleven rules over the surfaces an agent actually runs: hooks that
   auto-approve or fetch (`AGT-HOOK-001`, `-002`), wildcard tool grants
   (`AGT-CAP-002`), unpinned runners (`AGT-SUPPLY-001`), self-install,

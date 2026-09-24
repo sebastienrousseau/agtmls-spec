@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+id = "AGT-STEG-002"
+category = "steganography"
+severity = "low"
+title = "Selector or tag sequence in an emoji context"
+kind = "structural"
+scope = "raw"
+applies_to = ["*"]
+
+description = '''A variation selector directly after an emoji-presentation base, or a well-formed subdivision flag: an emoji as written, not a channel'''
+rationale = '''Every coloured check mark and every keycap carries U+FE0F, and a regional
+flag is a tag sequence by design. Reporting them as CRITICAL made the rule
+that catches the dominant smuggling channel the rule everyone switched off.
+The line between the two is data on AGT-STEG-001 (`emoji_context`), so both
+implementations draw it in the same place. A selector after an emoji base is
+reported only in a pedantic mode; a subdivision flag is reported at LOW
+always, because a flag is still a tag sequence a reviewer should know is
+there.'''
