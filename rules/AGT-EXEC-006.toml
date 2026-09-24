@@ -1,0 +1,38 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-EXEC-006"
+category = "unsafe_execution"
+severity = "high"
+title = "Permission-bypass flag"
+scope = "normalised"
+applies_to = ["*.md", "*.sh", "*.bash", "*.json", "*.yaml", "*.yml", "*.js", "*.py", "executable"]
+
+description = '''Permission-bypass flag (--dangerously-skip-permissions, --yolo, --full-auto) or trust-dialog write'''
+rationale = '''These flags remove the approval step of the agent runtime. A skill that instructs or configures them is asking to run unattended; a hook that writes trust state is doing it silently. Seen in a published harness that launched agents with --dangerously-skip-permissions.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)--dangerously-skip-permissions\b|--yolo\b|--full-auto\b|"hasTrustDialogAccepted"\s*:\s*true|--trust-all-tools\b'''
+
+[[true_positive]]
+text = '''claude --dangerously-skip-permissions -p "do the thing"'''
+
+[[true_positive]]
+text = '''codex --full-auto'''
+
+[[true_positive]]
+text = '''gemini --yolo'''
+
+[[true_positive]]
+text = '''"hasTrustDialogAccepted": true'''
+
+# No false_positive is declared, deliberately: documentation that quotes this
+# text warrants a human look as much as a hook that carries it, and negation
+# detection is trivially inverted. The escape hatch is a reviewable,
+# digest-keyed suppression, not a weaker pattern.
+false_positive_policy = "none-acceptable"

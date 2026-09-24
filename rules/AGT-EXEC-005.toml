@@ -1,0 +1,37 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-EXEC-005"
+category = "unsafe_execution"
+severity = "high"
+title = "Self-install at runtime"
+scope = "normalised"
+applies_to = ["*.md", "*.sh", "*.bash", "*.js", "*.mjs", "*.ts", "*.py", "*.json", "executable"]
+
+description = '''Self-install at runtime or in postinstall (npm install -g, --save into the user's project)'''
+rationale = '''A skill that installs itself globally, or writes itself into the user's dependencies, persists beyond the session that invoked it and beyond the registry's control.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)\bnpm\s+(?:i|install)\s+(?:-g|--global)\b|\bnpm\s+(?:i|install)\s+[^\n|;&]*--save(?:-dev)?\b|"postinstall"\s*:\s*"[^"]*\b(?:npm|npx|curl|wget)\b'''
+
+[[true_positive]]
+text = '''npm install -g ruflo'''
+
+[[true_positive]]
+text = '''npm i --save some-agent-tool'''
+
+[[true_positive]]
+text = '''"postinstall": "npx some-tool setup"'''
+
+[[false_positive]]
+text = '''npm ci'''
+note = "Installing the project's own lockfile is ordinary."
+
+[[false_positive]]
+text = '''npm test -- --grep install'''
+note = "Mentions install without performing one."

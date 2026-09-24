@@ -29,6 +29,12 @@ agree about `\s`, case folding and greediness. They do not, reliably — see 4.6
 | `CAP` | Capability escalation against declared policy | HIGH |
 | `POLICY` | Policy honesty and attestation | HIGH / MEDIUM |
 | `SCAN` | Analyzer limits | MEDIUM |
+| `HOOK` | Hooks that bypass approval or fetch at runtime | CRITICAL / HIGH |
+| `SUPPLY` | Unpinned runners and packages | MEDIUM |
+| `MCP` | MCP tools that hand the model a shell | HIGH |
+| `PACK` | Encoded payloads decoded into an interpreter | CRITICAL |
+| `SOCIAL` | Prose that walks a person past review | HIGH |
+| `SEL` | Descriptions that game skill selection | MEDIUM |
 
 Identifiers are permanent. A withdrawn rule MUST be marked `withdrawn = true`
 and its identifier MUST NOT be reused.

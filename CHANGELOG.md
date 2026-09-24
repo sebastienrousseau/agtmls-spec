@@ -11,6 +11,15 @@ including after withdrawal.
 
 ### Added
 
+- Eleven rules over the surfaces an agent actually runs: hooks that
+  auto-approve or fetch (`AGT-HOOK-001`, `-002`), wildcard tool grants
+  (`AGT-CAP-002`), unpinned runners (`AGT-SUPPLY-001`), self-install,
+  permission-bypass flags and model output interpolated into a shell
+  (`AGT-EXEC-005` to `-007`), command-running MCP tools (`AGT-MCP-001`),
+  decode-and-execute payloads (`AGT-PACK-001`), paste-this-command prose
+  (`AGT-SOCIAL-001`) and selection gaming (`AGT-SEL-001`). Thirteen corpus
+  cases, one with a split-line evasion and one benign pin. Six new classes
+  in §4.2.
 - Eight specification documents; `00-overview`, `03-integrity`, `04-rules`,
   `06-lockfile` and `07-conformance` are normative.
 - Nineteen rules as TOML data, loaded identically by every implementation.
@@ -20,6 +29,8 @@ including after withdrawal.
 
 ### Fixed
 
+- `AGT-EXEC-002` required the `r` flag before the `f`, so `rm -fr /` walked
+  past it. Either order matches now, with a true positive and a corpus case.
 - `ordering-digits-vs-letters` declared `A.md` and `a.md`, which are the same
   file on a case-insensitive filesystem. The vector recorded a three-file
   manifest and failed on the first Linux run. `validate-corpus.py` now rejects

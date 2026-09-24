@@ -1,0 +1,34 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-CAP-002"
+category = "capability_escalation"
+severity = "high"
+title = "Wildcard tool grant"
+scope = "normalised"
+applies_to = ["*.md", "*.json", "*.yaml", "*.yml"]
+
+description = '''Wildcard tool grant (mcp__*__*, Bash(*), or allowed-tools: *)'''
+rationale = '''A wildcard grants every tool, present and future, including ones the author never saw. It is escalation by default rather than by declaration.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)mcp__\*__\*|\bBash\(\*\)|allowed-tools:\s*"?\*"?(?:\s|$)'''
+
+[[true_positive]]
+text = '''allowed-tools: "*"'''
+
+[[true_positive]]
+text = '''"allow": ["mcp__*__*", "Bash(*)"]'''
+
+[[false_positive]]
+text = '''allowed-tools: "Read Grep Bash(git log:*)"'''
+note = "A scoped specifier narrows a tool; it is the opposite of a wildcard."
+
+[[false_positive]]
+text = '''"allow": ["Bash(npm test)", "Read"]'''
+note = "Exact grants are declarations."
