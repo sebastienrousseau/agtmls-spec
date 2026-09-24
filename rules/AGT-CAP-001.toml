@@ -10,3 +10,16 @@ kind = "structural"
 # Structural rules are implemented in code rather than as a pattern, but
 # are declared here so the rule set can be enumerated from data alone.
 description = '''SKILL.md frontmatter grants a tool whose capability metadata.json safety_policy denies. The runtime honours the frontmatter, so the disagreement is the escalation.'''
+
+# The capability each tool grants, as data (spec 10.5). Implementations
+# carried identical hand-kept copies; a `Bash(git log:*)` specifier narrows
+# the tool and still grants its capability.
+[tool_capabilities]
+Bash = "executes_commands"
+BashOutput = "executes_commands"
+KillShell = "executes_commands"
+Write = "writes_files"
+Edit = "writes_files"
+NotebookEdit = "writes_files"
+WebFetch = "network_access"
+WebSearch = "network_access"
