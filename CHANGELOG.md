@@ -11,6 +11,10 @@ including after withdrawal.
 
 ### Added
 
+- `AGT-HOOK-003` (MEDIUM): repository hooks run on a lifecycle event
+  without a trust gate (`core.hooksPath` into the tree, `.dmux-hooks`,
+  `worktree_created`). `AGT-POLICY-006` (HIGH): an unscoped tool family in
+  `permissions.allow`. Both are pattern rules, with four corpus cases.
 - `AGT-STEG-002` (LOW) and an `emoji_context` table on `AGT-STEG-001`:
   a variation selector directly after an emoji-presentation base, and a
   well-formed subdivision flag, are an emoji as written rather than a

@@ -1,0 +1,36 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-HOOK-003"
+category = "hook_safety"
+severity = "medium"
+title = "Repository hooks run without a trust gate"
+scope = "normalised"
+applies_to = ["*.md", "*.sh", "*.bash", "*.json", "*.yaml", "*.yml", "*.js", "*.ts", "executable"]
+
+description = '''Hook scripts that run from the checked-out repository on a lifecycle event (core.hooksPath into the tree, .dmux-hooks, worktree_created)'''
+rationale = '''A tool that runs scripts found in the repository on clone, checkout or worktree creation runs whatever the last commit put there, before anyone reads it. Seen in a published harness that executed .dmux-hooks on worktree creation.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+pattern = '''(?i)\bcore\.hooksPath\s*=?\s*["']?\.{0,2}/?[\w./-]*hooks\b|\.dmux-hooks\b|["']?worktree_created["']?\s*[:=]'''
+
+[[true_positive]]
+text = '''git config core.hooksPath .githooks'''
+
+[[true_positive]]
+text = '''Hooks live in .dmux-hooks/ and run automatically.'''
+
+[[true_positive]]
+text = '''"worktree_created": "./.dmux-hooks/setup.sh"'''
+
+[[false_positive]]
+text = '''git config --global core.editor vim'''
+note = "Another git setting."
+
+[[false_positive]]
+text = '''Run ./scripts/setup.sh after reading it.'''
+note = "An explicit, reviewed step."

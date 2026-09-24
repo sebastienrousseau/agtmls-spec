@@ -1,0 +1,33 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-POLICY-006"
+category = "capability_escalation"
+severity = "high"
+title = "Unscoped tool in permissions.allow"
+scope = "normalised"
+applies_to = ["*.json", "*.md", "*.sh", "*.js", "*.ts", "*.py", "executable"]
+
+description = '''A permissions.allow list that grants a whole tool family unscoped (Bash, Write, Edit, WebFetch) instead of a specifier'''
+rationale = '''An installer or init step that writes `"allow": ["Bash"]` into settings pre-approves every shell command for every future session. Seen in a published CLI's init. Grant `Bash(npm test)`, not `Bash`.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+pattern = '''(?i)"allow"\s*:\s*\[[^\]]*"(?:Bash|Write|Edit|MultiEdit|WebFetch|NotebookEdit)"\s*[,\]]'''
+
+[[true_positive]]
+text = '''{"permissions": {"allow": ["Read", "Bash"]}}'''
+
+[[true_positive]]
+text = '''"allow": ["Write", "Read(./src/**)"]'''
+
+[[false_positive]]
+text = '''"allow": ["Bash(npm test)", "Read"]'''
+note = "Scoped grants are declarations."
+
+[[false_positive]]
+text = '''"deny": ["Bash"]'''
+note = "A deny list narrows."
