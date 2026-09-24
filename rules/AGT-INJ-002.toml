@@ -9,7 +9,7 @@ category = "prompt_injection"
 severity = "high"
 title = "Instruction override (disregard)"
 scope = "normalised"
-applies_to = ["*.md", "*.txt", "executable"]
+applies_to = ["*"]
 
 description = '''Instruction override pattern ('disregard prior rules')'''
 rationale = '''The 'disregard' phrasing of AGT-INJ-001.'''

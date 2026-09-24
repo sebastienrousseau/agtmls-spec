@@ -146,3 +146,31 @@ A tag sequence that is exactly `subdivision_flag.base`, one or more tags in
 `[tags_from, tags_to]`, then `terminator`, MUST be reported as `AGT-STEG-002`
 (LOW), always. Any other tag character remains `AGT-STEG-001`.
 
+## 4.11 Where a pattern rule applies
+
+A pattern rule MUST run only on files one of its `applies_to` selectors
+matches, and on every such file. A selector is one of:
+
+| Selector | Matches |
+| :--- | :--- |
+| `*` | every audited file |
+| `*.<ext>` | a file whose name ends in `.<ext>`, compared case-insensitively |
+| `executable` | a file whose content begins with `#!` |
+
+No other form is valid. The grammar is deliberately small: a glob engine is a
+place for two implementations to disagree, and `executable` is defined by
+content rather than by a mode bit so that in-memory analysis (a WASM build,
+an editor integration) decides the same way as a filesystem walk.
+
+Structural rules are not selected by `applies_to`.
+
+An implementation MUST audit a file that begins with `#!` whatever its
+name or mode, so that `executable` can select it: a script with no
+extension and no execute bit is still a script.
+
+Selectors should follow where the payload is read or run, not where it is
+usually written. An instruction to a model is read in every file an agent
+opens, so the injection rules use `*`; a shell command is run from hook and CI
+configuration as well as from scripts, so the execution rules cover JSON, YAML
+and TOML.
+

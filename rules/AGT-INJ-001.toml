@@ -9,7 +9,7 @@ category = "prompt_injection"
 severity = "high"
 title = "Instruction override"
 scope = "normalised"
-applies_to = ["*.md", "*.txt", "executable"]
+applies_to = ["*"]
 
 description = '''Instruction override pattern ('ignore previous instructions')'''
 rationale = '''An imperative to disregard prior instructions. The canonical prompt-injection shape.'''

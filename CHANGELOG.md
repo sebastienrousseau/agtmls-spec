@@ -11,6 +11,12 @@ including after withdrawal.
 
 ### Added
 
+- §4.11 defines `applies_to`: a pattern rule runs only on files a
+  selector matches, and a selector is `*`, `*.<ext>` or `executable` (a file
+  beginning with `#!`). `validate-corpus.py` rejects any other form. Four
+  corpus cases, one of them a benign file the selectors keep out. An
+  implementation must also audit any file beginning with `#!`, so a
+  script with no extension and no execute bit is still in scope.
 - `AGT-HOOK-003` (MEDIUM): repository hooks run on a lifecycle event
   without a trust gate (`core.hooksPath` into the tree, `.dmux-hooks`,
   `worktree_created`). `AGT-POLICY-006` (HIGH): an unscoped tool family in
@@ -39,6 +45,11 @@ including after withdrawal.
 
 ### Fixed
 
+- The injection rules applied to Markdown, text and executables only, so
+  an instruction override inside a JSON MCP tool description was out of
+  scope. They apply to every file now, and the execution, payload,
+  exfiltration, social and selection rules cover JSON, YAML and TOML,
+  where hook and CI commands and tool descriptions live.
 - `AGT-EXEC-002` required the `r` flag before the `f`, so `rm -fr /` walked
   past it. Either order matches now, with a true positive and a corpus case.
 - `ordering-digits-vs-letters` declared `A.md` and `a.md`, which are the same

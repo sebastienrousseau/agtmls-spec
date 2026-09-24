@@ -9,7 +9,7 @@ category = "unsafe_execution"
 severity = "high"
 title = "Pipe-to-shell execution"
 scope = "normalised"
-applies_to = ["*.md", "*.sh", "*.bash", "*.py", "*.js", "executable"]
+applies_to = ["*.md", "*.sh", "*.bash", "*.zsh", "*.py", "*.js", "*.mjs", "*.cjs", "*.ts", "*.rb", "*.json", "*.yaml", "*.yml", "*.toml", "executable"]
 
 description = '''Unsafe pipe-to-shell download execution (curl|bash)'''
 rationale = '''Downloading and executing code in one step: the payload is never reviewed and can differ per request.'''

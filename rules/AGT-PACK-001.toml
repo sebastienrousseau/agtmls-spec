@@ -9,7 +9,7 @@ category = "packed_payload"
 severity = "critical"
 title = "Decode-and-execute of an encoded payload"
 scope = "normalised"
-applies_to = ["*.md", "*.sh", "*.bash", "*.py", "*.js", "*.mjs", "*.ts", "*.rb", "executable"]
+applies_to = ["*.md", "*.sh", "*.bash", "*.zsh", "*.py", "*.js", "*.mjs", "*.cjs", "*.ts", "*.rb", "*.json", "*.yaml", "*.yml", "*.toml", "executable"]
 
 description = '''Encoded payload decoded and executed in one step (base64 -d | sh, exec(b64decode(...)))'''
 rationale = '''Encoding hides a payload from every pattern rule; decoding it straight into an interpreter is the tell. The Cloak-and-Detonate shape: the blob is data until the one line that runs it.'''

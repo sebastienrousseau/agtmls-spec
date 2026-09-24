@@ -9,7 +9,7 @@ category = "unsafe_execution"
 severity = "high"
 title = "Filesystem root deletion"
 scope = "normalised"
-applies_to = ["*.md", "*.sh", "*.bash", "*.py", "*.js", "executable"]
+applies_to = ["*.md", "*.sh", "*.bash", "*.zsh", "*.py", "*.js", "*.mjs", "*.cjs", "*.ts", "*.rb", "*.json", "*.yaml", "*.yml", "*.toml", "executable"]
 
 description = '''Destructive recursive deletion of filesystem root (rm -rf /)'''
 rationale = '''Recursive deletion of /.'''

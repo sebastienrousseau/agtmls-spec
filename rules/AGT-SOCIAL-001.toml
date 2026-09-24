@@ -9,7 +9,7 @@ category = "social_engineering"
 severity = "high"
 title = "Paste-this-command or fake verification"
 scope = "normalised"
-applies_to = ["*.md", "*.txt", "*.rst", "*.json"]
+applies_to = ["*.md", "*.txt", "*.rst", "*.json", "*.yaml", "*.yml", "*.toml"]
 
 description = '''Instruction to paste a command into the terminal, or a fake verification step'''
 rationale = '''The ClawHavoc shape: prose that walks the user past the review step by making execution the verification. A skill has no business asking a person to paste commands blind.'''

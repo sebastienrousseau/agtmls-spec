@@ -9,7 +9,7 @@ category = "prompt_injection"
 severity = "high"
 title = "System override / DAN"
 scope = "normalised"
-applies_to = ["*.md", "*.txt", "executable"]
+applies_to = ["*"]
 
 description = '''System override / DAN jailbreak attempt'''
 rationale = '''Named jailbreak families.'''

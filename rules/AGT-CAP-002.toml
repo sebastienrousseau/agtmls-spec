@@ -9,7 +9,7 @@ category = "capability_escalation"
 severity = "high"
 title = "Wildcard tool grant"
 scope = "normalised"
-applies_to = ["*.md", "*.json", "*.yaml", "*.yml"]
+applies_to = ["*.md", "*.json", "*.yaml", "*.yml", "*.toml"]
 
 description = '''Wildcard tool grant (mcp__*__*, Bash(*), or allowed-tools: *)'''
 rationale = '''A wildcard grants every tool, present and future, including ones the author never saw. It is escalation by default rather than by declaration.'''

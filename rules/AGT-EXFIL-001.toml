@@ -9,7 +9,7 @@ category = "data_exfiltration"
 severity = "high"
 title = "Image pingback exfiltration"
 scope = "normalised"
-applies_to = ["*.md"]
+applies_to = ["*.md", "*.txt", "*.json", "*.yaml", "*.yml", "*.toml"]
 
 description = '''Potential markdown image data exfiltration pingback'''
 rationale = '''A markdown image whose URL interpolates context. Rendering the document makes the request.'''

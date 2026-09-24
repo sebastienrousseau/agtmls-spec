@@ -9,7 +9,7 @@ category = "prompt_injection"
 severity = "high"
 title = "Developer-mode jailbreak"
 scope = "normalised"
-applies_to = ["*.md", "*.txt", "executable"]
+applies_to = ["*"]
 
 description = '''Persona jailbreak ('developer mode')'''
 rationale = '''A persona switch claiming elevated permissions.'''
