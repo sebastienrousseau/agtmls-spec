@@ -11,16 +11,16 @@ title = "Unpinned package runner"
 scope = "normalised"
 applies_to = ["*.md", "*.sh", "*.bash", "*.json", "*.yaml", "*.yml", "executable"]
 
-description = '''Unpinned package runner (npx, bunx, uvx, pipx run, pnpm dlx) with no exact version, or @latest'''
-rationale = '''A runner with no version executes whatever the registry serves at that moment; a compromised or renamed package runs with the agent's rights. Seen 957 times in one published plugin. Pin to an exact version.'''
+description = '''Unpinned package runner (npx -y, bunx, uvx, pipx run, pnpm dlx) with no exact version, or npx ...@latest'''
+rationale = '''A runner that fetches without a version executes whatever the registry serves at that moment; a compromised or renamed package runs with the agent's rights. Seen 957 times in one published plugin. bunx, uvx, pipx run and pnpm dlx always fetch; npx fetches without asking only with -y or --yes, and `npx jest` runs the project's own binary. Pin to an exact version.'''
 
 # (?i) is inline, not a host-language compile flag: the flag would not
 # survive export and the two implementations would disagree on case.
 # scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
-pattern = '''(?i)\b(?:npx|bunx|uvx|pipx\s+run|pnpm\s+dlx)\s+(?:-[-\w]+\s+)*(?:@[\w.-]+/)?[A-Za-z0-9_][\w.-]*(?:@latest)?(?:\s|$|;|&|\|)'''
+pattern = '''(?i)\b(?:npx\s+(?:-y|--yes)|bunx|uvx|pipx\s+run|pnpm\s+dlx)\s+(?:-[-\w]+\s+)*(?:@[\w.-]+/)?[A-Za-z0-9_][\w.-]*(?:@latest)?(?:\s|$|;|&|\|)|\bnpx\s+(?:-[-\w]+\s+)*(?:@[\w.-]+/)?[A-Za-z0-9_][\w.-]*@latest\b'''
 
 [[true_positive]]
-text = '''npx skills add owner/repo'''
+text = '''npx -y skills add owner/repo'''
 
 [[true_positive]]
 text = '''npx create-thing@latest'''
@@ -34,6 +34,10 @@ text = '''pnpm dlx some-tool --init'''
 [[false_positive]]
 text = '''npx skills@1.4.2 add owner/repo'''
 note = "An exact version is a pin."
+
+[[false_positive]]
+text = '''npx jest -t "test name"'''
+note = "Runs the project's own installed binary, and npx asks before installing a missing package unless told -y."
 
 [[false_positive]]
 text = '''uvx agtmls==0.0.7 list'''

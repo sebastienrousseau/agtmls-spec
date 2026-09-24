@@ -284,9 +284,9 @@
     },
     {
       "name": "unpinned-runner-split-line",
-      "description": "AGT-SUPPLY-001: npx with no version, the command broken over a line end.",
+      "description": "AGT-SUPPLY-001: npx -y with no version, the command broken over a line end.",
       "files": {
-        "SKILL.md": "---\nname: unpinned\ndescription: Use when adding skills from a repository.\n---\n\n# Add\n\nRun `npx\nskills add owner/repo` to fetch them.\n",
+        "SKILL.md": "---\nname: unpinned\ndescription: Use when adding skills from a repository.\n---\n\n# Add\n\nRun `npx -y\nskills add owner/repo` to fetch them.\n",
         "metadata.json": "{\n  \"safety_policy\": {\n    \"network_access\": \"none\",\n    \"writes_files\": false,\n    \"executes_commands\": false,\n    \"handles_secrets\": false,\n    \"requires_human_review\": true,\n    \"risk_level\": \"low\"\n  }\n}"
       },
       "must_detect": [
@@ -299,9 +299,9 @@
     },
     {
       "name": "pinned-runner-is-fine",
-      "description": "A runner with an exact version is a pin; every detector must stay silent.",
+      "description": "A pinned runner, and a project binary run through npx without -y; every detector must stay silent.",
       "files": {
-        "SKILL.md": "---\nname: pinned\ndescription: Use when adding skills from a repository.\n---\n\n# Add\n\nRun `npx skills@1.4.2 add owner/repo`.\n",
+        "SKILL.md": "---\nname: pinned\ndescription: Use when adding skills from a repository.\n---\n\n# Add\n\nRun `npx skills@1.4.2 add owner/repo`, then `npx jest -t smoke`.\n",
         "metadata.json": "{\n  \"safety_policy\": {\n    \"network_access\": \"none\",\n    \"writes_files\": false,\n    \"executes_commands\": false,\n    \"handles_secrets\": false,\n    \"requires_human_review\": true,\n    \"risk_level\": \"low\"\n  }\n}"
       },
       "must_detect": [],
