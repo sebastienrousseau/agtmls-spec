@@ -11,6 +11,12 @@ including after withdrawal.
 
 ### Added
 
+- `11-advisories.md` (draft): a signed OSV feed (`AGT-ADV-YYYY-NNN`, digests
+  in `ecosystem_specific`, matched on digest never version, `withdrawn`
+  honoured) under `agtmls-advisory@v1`, offline by default with an
+  opt-in, verify-before-replace `--refresh`. Exit code `6` names the
+  advisories, and §11.4 fixes precedence: `5`, then `3`, then `6`, then
+  `4`. Six vectors, checked in CI.
 - `10-attestations.md` (draft): per-skill in-toto Statements whose subject
   is the skill digest. A manifest predicate (the §3.1 file list, so the
   digest can be recomputed and the differing file named), a capabilities
