@@ -61,6 +61,23 @@ single space. A model reads a tool description after it is decoded, so
 `Ignore previous\n instructions` in a JSON file is the phrase, not two
 fragments. Decoding never creates a line, so source line numbers survive.
 
+After any JSON decoding and before collapsing whitespace, an implementation
+MUST remove every code point that `AGT-STEG-001` declares, in `code_points`
+and in `code_point_ranges`, and MUST then apply Unicode Normalization Form
+KC (NFKC), in that order. A keyword split by a zero-width space or a tag
+character, or spelt in fullwidth letters, is the keyword to a model; without
+these steps the hidden bytes were reported and the instruction they carried
+went unnamed. `AGT-STEG-001` still reports those code points, because it
+reads the content as decoded, never the normalised text. Neither step
+removes or creates a line terminator, so source line numbers survive. The
+`line` and `raw` scopes match the content as decoded, without either step.
+
+NFKC is stable for every assigned code point (the Unicode Normalization
+Stability Policy), so implementations built on different Unicode versions
+disagree only on a code point one of them does not assign. Corpus cases use
+only code points assigned in Unicode 13.0, the version of the oldest runtime
+a reference implementation supports.
+
 Findings MUST still report a **source line number**, not an offset into the
 normalised text. An implementation SHOULD build the mapping lazily, once a
 pattern has matched, since almost every file is clean.
