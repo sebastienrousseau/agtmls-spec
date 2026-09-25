@@ -3,9 +3,9 @@
 
 # 9. Index Signatures
 
-**Status:** draft — no implementation verifies signatures yet. It becomes
-normative when one passes [`corpus/signatures/`](../corpus/signatures/)
-without special-casing, per [00-overview.md §0.3](00-overview.md).
+**Status:** normative. **Conformance:** L5: both reference implementations
+reproduce every vector in [`corpus/signatures/`](../corpus/signatures/), and
+`conformance/run.py` compares their verdicts and exit codes with each other.
 
 ## 9.1 Purpose
 

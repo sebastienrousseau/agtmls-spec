@@ -13,6 +13,7 @@
 | **L2** | Verifier | L1, and reproduces every vector in `corpus/digest/` exactly |
 | **L3** | Analyzer | L2, and passes `corpus/security/` including its evasion variants, with no false positive on benign cases |
 | **L4** | Registry | L3, and implements install, lockfile and verification semantics |
+| **L5** | Trust | L4, and reproduces every vector in `corpus/signatures/`, `corpus/advisories/` and `corpus/attestations/`: signature and advisory verdicts with their exit codes ([09](09-signatures.md), [11](11-advisories.md)), and attestations byte for byte ([10](10-attestations.md)) |
 
 ## 7.2 Claiming a level
 

@@ -9,8 +9,21 @@ including after withdrawal.
 
 ## Unreleased
 
+### Changed
+
+- Chapters 9, 10 (except the reserved §10.6) and 11 are normative. Both
+  reference implementations reproduce every signature, advisory and
+  attestation vector, and `conformance/run.py` compares them with each
+  other at the new level **L5 (Trust)**: signature and advisory verdicts
+  with their exit codes, and attestations byte for byte.
+
 ### Added
 
+- Three `AGT-CAP-001` corpus cases: `allowed-tools` written
+  space-separated, a tool narrowed by a specifier (`Bash(git log:*)`),
+  and the same specifier under a policy that admits it. One
+  implementation split on commas only and missed the first two while the
+  differential stayed green.
 - `11-advisories.md` (draft): a signed OSV feed (`AGT-ADV-YYYY-NNN`, digests
   in `ecosystem_specific`, matched on digest never version, `withdrawn`
   honoured) under `agtmls-advisory@v1`, offline by default with an

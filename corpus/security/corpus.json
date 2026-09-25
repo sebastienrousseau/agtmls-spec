@@ -697,6 +697,46 @@
       "must_not_detect": [
         "prompt_injection"
       ]
+    },
+    {
+      "description": "The Agent Skills spelling of allowed-tools is space-separated (\u00a710.5). Split on commas alone, \"Read Grep Bash\" is one tool that grants nothing, and the escalation goes unreported.",
+      "files": {
+        "SKILL.md": "---\nname: tool-escalation-space-separated\ndescription: Use when reading a repository's history.\nallowed-tools: \"Read Grep Bash\"\n---\n\n# History\n\nSummarise recent commits.\n",
+        "metadata.json": "{\n  \"safety_policy\": {\n    \"executes_commands\": false,\n    \"network_access\": \"none\",\n    \"writes_files\": false,\n    \"risk_level\": \"low\"\n  }\n}"
+      },
+      "name": "tool-escalation-space-separated",
+      "must_detect": [
+        {
+          "category": "capability_escalation",
+          "min_severity": "HIGH"
+        }
+      ]
+    },
+    {
+      "description": "A parenthesised specifier narrows a tool and still grants its capability (\u00a710.5): Bash(git log:*) executes commands.",
+      "files": {
+        "SKILL.md": "---\nname: tool-escalation-through-a-specifier\ndescription: Use when reading a repository's history.\nallowed-tools: \"Read Bash(git log:*)\"\n---\n\n# History\n\nSummarise recent commits.\n",
+        "metadata.json": "{\n  \"safety_policy\": {\n    \"executes_commands\": false,\n    \"network_access\": \"none\",\n    \"writes_files\": false,\n    \"risk_level\": \"low\"\n  }\n}"
+      },
+      "name": "tool-escalation-through-a-specifier",
+      "must_detect": [
+        {
+          "category": "capability_escalation",
+          "min_severity": "HIGH"
+        }
+      ]
+    },
+    {
+      "description": "The same narrowed Bash under a policy that admits executing commands: no escalation.",
+      "files": {
+        "SKILL.md": "---\nname: specified-tool-within-its-policy\ndescription: Use when reading a repository's history.\nallowed-tools: \"Read Bash(git log:*)\"\n---\n\n# History\n\nSummarise recent commits.\n",
+        "metadata.json": "{\n  \"safety_policy\": {\n    \"executes_commands\": true,\n    \"network_access\": \"none\",\n    \"writes_files\": false,\n    \"risk_level\": \"low\"\n  }\n}"
+      },
+      "name": "specified-tool-within-its-policy",
+      "must_detect": [],
+      "must_not_detect": [
+        "capability_escalation"
+      ]
     }
   ],
   "schema_version": 1
