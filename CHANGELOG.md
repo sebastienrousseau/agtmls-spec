@@ -17,6 +17,12 @@ including after withdrawal.
   letters, matches. `AGT-STEG-001` still reports the hidden code points.
   Three corpus cases.
 
+### Fixed
+
+- The signature, advisory and attestation vectors are checked out as exact
+  bytes (`.gitattributes`): Git for Windows rewrote them with CRLF, so
+  every signature vector failed there.
+
 ### Added
 
 - `11-advisories.md` (draft): a signed OSV feed (`AGT-ADV-YYYY-NNN`, digests
