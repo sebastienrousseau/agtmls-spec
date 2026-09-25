@@ -9,6 +9,14 @@ including after withdrawal.
 
 ## Unreleased
 
+### Changed
+
+- §4.3: normalised matching removes the code points `AGT-STEG-001`
+  declares and applies NFKC before collapsing whitespace, so a keyword
+  split by a zero-width space or a tag character, or spelt in fullwidth
+  letters, matches. `AGT-STEG-001` still reports the hidden code points.
+  Three corpus cases.
+
 ### Added
 
 - `11-advisories.md` (draft): a signed OSV feed (`AGT-ADV-YYYY-NNN`, digests
