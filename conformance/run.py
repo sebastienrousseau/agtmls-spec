@@ -100,6 +100,49 @@ class Implementation:
         return proc.stdout.strip()
 
 
+    def _trust(self, *args: str) -> subprocess.CompletedProcess:
+        """trust-check.py for Python, the matching subcommand for Rust."""
+        if self.kind == "python":
+            argv = [sys.executable, str(self.location / "scripts" / "trust-check.py"), *args]
+        else:
+            argv = [str(self.location), *args]
+        return subprocess.run(argv, capture_output=True, text=True, check=False)
+
+    def signature(self, data: Path, sig: Path, allowed: Path, namespace: str,
+                  verify_time: str) -> tuple[int, str]:
+        """(exit code, status) for one signature (chapter 9)."""
+        proc = self._trust("signature", str(data), "--sig", str(sig), "--allowed-signers", str(allowed),
+                           "--namespace", namespace, "--verify-time", verify_time, "--json")
+        try:
+            return proc.returncode, json.loads(proc.stdout)["status"]
+        except (json.JSONDecodeError, KeyError) as exc:
+            raise RuntimeError(f"{self.name}: signature produced no status: {exc}\n{proc.stderr[:400]}")
+
+    def advisories(self, feed: Path, sig: Path, allowed: Path, lockfile: Path,
+                   verify_time: str) -> tuple[int, str, list[str]]:
+        """(exit code, feed status, revoking advisory ids) for one lockfile (chapter 11)."""
+        proc = self._trust("advisories", str(feed), "--sig", str(sig), "--allowed-signers", str(allowed),
+                           "--lockfile", str(lockfile), "--verify-time", verify_time, "--json")
+        try:
+            payload = json.loads(proc.stdout)
+            ids = sorted({i for hit in payload["revoked"] for i in hit["advisories"]})
+            return proc.returncode, payload["advisory_feed"], ids
+        except (json.JSONDecodeError, KeyError, TypeError) as exc:
+            raise RuntimeError(f"{self.name}: advisories produced no verdict: {exc}\n{proc.stderr[:400]}")
+
+    def attest(self, kind: str, skill: Path, name: str, digest: str | None, rules: Path) -> str:
+        """One canonically rendered attestation (chapter 10)."""
+        args = ["attest", kind, str(skill), "--name", name]
+        if digest:
+            args += ["--digest", digest]
+        if self.kind == "rust":
+            args += ["--rules", str(rules)]
+        proc = self._trust(*args)
+        if proc.returncode != 0:
+            raise RuntimeError(f"{self.name}: attest failed: {proc.stderr.strip()[:400]}")
+        return proc.stdout
+
+
 def materialise(case: dict, root: Path) -> Path:
     root.mkdir(parents=True, exist_ok=True)
     for relative, content in case.get("files", {}).items():
@@ -294,6 +337,99 @@ def run_registry_level(impls: list[Implementation], fixture: Path) -> tuple[int,
     return (0 if failures else 1), 1, failures
 
 
+def _agree(label: str, results: dict[str, object], expected: object) -> list[str]:
+    """Failures for results that miss `expected` or disagree with each other."""
+    failures = []
+    wrong = {name: got for name, got in results.items() if got != expected}
+    if wrong:
+        failures.append(f"{label}: expected {expected!r}\n"
+                        + "".join(f"      {n:<8} {g!r}\n" for n, g in results.items()))
+    elif len({repr(v) for v in results.values()}) > 1:
+        failures.append(f"{label}: IMPLEMENTATIONS DISAGREE\n"
+                        + "".join(f"      {n:<8} {g!r}\n" for n, g in results.items()))
+    return failures
+
+
+SIGNATURE_EXIT = {"verified": 0, "bad_signature": 5, "unsigned": 4}
+ADVISORY_EXIT = {"clean": 0, "revoked": 6, "bad_signature": 5, "unsigned": 4}
+
+
+def run_trust_level(impls: list[Implementation]) -> tuple[int, int, list[str]]:
+    """L5. Chapters 9, 10 and 11, against their vectors and each other.
+
+    Signatures and advisories are judged at each vector's fixed verification
+    time, on exit code and status together; attestations are compared byte
+    for byte, since their rendering is canonical.
+    """
+    failures: list[str] = []
+    passed = total = 0
+    corpus = SPEC_ROOT / "corpus"
+
+    sig_dir = corpus / "signatures"
+    sigs = json.loads((sig_dir / "cases.json").read_text(encoding="utf-8"))
+    for case in sigs["cases"]:
+        total += 1
+        sig = sig_dir / (case["signature"] or "absent.sig")
+        results: dict[str, object] = {}
+        for impl in impls:
+            try:
+                results[impl.name] = impl.signature(
+                    sig_dir / case["index"], sig, sig_dir / sigs["allowed_signers"],
+                    sigs["namespace"], case["verify_time"])
+            except RuntimeError as exc:
+                failures.append(str(exc))
+        found = _agree(f"signatures/{case['name']}", results,
+                       (SIGNATURE_EXIT[case["expected"]], case["expected"]))
+        failures += found
+        passed += not found and len(results) == len(impls)
+
+    adv_dir = corpus / "advisories"
+    advs = json.loads((adv_dir / "cases.json").read_text(encoding="utf-8"))
+    with tempfile.TemporaryDirectory(prefix="agtmls-l5-") as raw:
+        for case in advs["cases"]:
+            total += 1
+            lock = Path(raw) / f"{case['name']}.json"
+            lock.write_text(json.dumps(case["lockfile"]), encoding="utf-8")
+            sig = adv_dir / (case["signature"] or "absent.sig")
+            results = {}
+            for impl in impls:
+                try:
+                    code, status, ids = impl.advisories(
+                        adv_dir / advs["feed"], sig, adv_dir / advs["allowed_signers"], lock,
+                        advs["verify_time"])
+                    verdict = ("revoked" if ids else "clean") if status == "verified" else status
+                    results[impl.name] = (code, verdict, ids)
+                except RuntimeError as exc:
+                    failures.append(str(exc))
+            expected = (ADVISORY_EXIT[case["expected"]], case["expected"], case["advisories"])
+            found = _agree(f"advisories/{case['name']}", results, expected)
+            failures += found
+            passed += not found and len(results) == len(impls)
+
+    att_dir = corpus / "attestations"
+    inputs = json.loads((att_dir / "inputs.json").read_text(encoding="utf-8"))
+    digest_cases = {c["name"]: c for c in json.loads(
+        (corpus / "digest" / "cases.json").read_text(encoding="utf-8"))["cases"]}
+    runs = [("manifest", m["vector"], digest_cases[m["digest_case"]], m["skill"], None)
+            for m in inputs["manifests"]]
+    runs += [("capabilities", c["vector"], c, c["skill"], c["digest"]) for c in inputs["capabilities"]]
+    with tempfile.TemporaryDirectory(prefix="agtmls-l5-attest-") as raw:
+        for kind, vector, case, name, digest in runs:
+            total += 1
+            skill = materialise(case, Path(raw) / vector)
+            results = {}
+            for impl in impls:
+                try:
+                    results[impl.name] = impl.attest(kind, skill, name, digest, SPEC_ROOT / "rules")
+                except RuntimeError as exc:
+                    failures.append(str(exc))
+            want = (att_dir / vector).read_text(encoding="utf-8")
+            found = _agree(f"attestations/{vector}", results, want)
+            failures += found
+            passed += not found and len(results) == len(impls)
+    return passed, total, failures
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", maxsplit=1)[0])
     parser.add_argument("--python", type=Path, help="path to an agtmls checkout")
@@ -355,6 +491,12 @@ def main() -> int:
         }
         failed |= bool(registry_failures)
 
+    trust_passed, trust_total, trust_failures = run_trust_level(impls)
+    report["levels"]["L5-trust"] = {
+        "passed": trust_passed, "total": trust_total, "failures": trust_failures,
+    }
+    failed |= bool(trust_failures)
+
     if args.json:
         print(json.dumps(report, indent=2))
     else:
@@ -376,6 +518,9 @@ def main() -> int:
             print(f"  L3 analyzer       {analyzer_passed}/{analyzer_total} security case(s) agree")
             for failure in analyzer_failures:
                 print(f"    FAIL {failure}")
+        print(f"  L5 trust          {trust_passed}/{trust_total} signature, advisory and attestation vector(s)")
+        for failure in trust_failures:
+            print(f"    FAIL {failure}")
         print()
         if failed:
             print("FAIL: conformance failed")

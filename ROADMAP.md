@@ -19,8 +19,9 @@ disagree, **the implementation is correct and the document is the defect**.
   bar, and it is why they are not normative yet.
 - **Widen the security corpus.** Base64 and hex-encoded payloads, entropy,
   and frontmatter that grants tools no runtime defines.
-- **Conformance levels beyond L4.** Nothing yet implements install semantics
-  end to end in two languages.
+- **Conformance levels beyond L5.** Nothing yet implements install semantics
+  end to end in two languages, and the audit predicate (§10.6) has no
+  emitter.
 
 ## Not planned
 

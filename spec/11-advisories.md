@@ -3,9 +3,9 @@
 
 # 11. Advisories and Revocation
 
-**Status:** draft — no implementation consults advisories yet. It becomes
-normative when one passes [`corpus/advisories/`](../corpus/advisories/)
-without special-casing, per [00-overview.md §0.3](00-overview.md).
+**Status:** normative. **Conformance:** L5: both reference implementations
+reproduce every vector in [`corpus/advisories/`](../corpus/advisories/), and
+`conformance/run.py` compares their verdicts and exit codes with each other.
 
 ## 11.1 Purpose
 

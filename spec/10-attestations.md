@@ -3,9 +3,10 @@
 
 # 10. Attestations
 
-**Status:** draft — no implementation emits attestations yet. It becomes
-normative when one reproduces [`corpus/attestations/`](../corpus/attestations/)
-byte for byte, per [00-overview.md §0.3](00-overview.md).
+**Status:** normative, except §10.6, which is reserved until an analyzer
+emits it. **Conformance:** L5: both reference implementations reproduce
+every vector in [`corpus/attestations/`](../corpus/attestations/) byte for
+byte, and `conformance/run.py` compares them with each other.
 
 ## 10.1 Purpose
 

@@ -39,9 +39,9 @@ a suggestion.
 | [`05-index.md`](05-index.md) | Draft — derived from the reference implementation |
 | [`06-lockfile.md`](06-lockfile.md) | **Normative**, with L4 conformance |
 | [`07-conformance.md`](07-conformance.md) | **Normative** |
-| [`09-signatures.md`](09-signatures.md) | Draft — no verifier yet; vectors in `corpus/signatures/` |
-| [`10-attestations.md`](10-attestations.md) | Draft — no emitter yet; vectors in `corpus/attestations/` |
-| [`11-advisories.md`](11-advisories.md) | Draft — no verifier yet; vectors in `corpus/advisories/` |
+| [`09-signatures.md`](09-signatures.md) | **Normative**, with L5 conformance |
+| [`10-attestations.md`](10-attestations.md) | **Normative** for §10.1–10.5 and §10.7–10.8, with L5 conformance; §10.6 reserved |
+| [`11-advisories.md`](11-advisories.md) | **Normative**, with L5 conformance |
 
 "Draft" means the behaviour is real and implemented, but this document has not
 yet been reviewed as the authority. Where a draft document and the reference

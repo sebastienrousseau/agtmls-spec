@@ -69,6 +69,7 @@ kind of test while three independent evasions walked through it.
 | **L2** | Verifier | L1, plus digests match the normative vectors (`digest`) |
 | **L3** | Analyzer | L2, plus the full security corpus including evasions |
 | **L4** | Registry | L3, plus install, lockfile and verification semantics |
+| **L5** | Trust | L4, plus index signatures, advisories and attestations (`signatures`, `advisories`, `attestations`) |
 
 An implementation publishes `conformance.json` declaring its level. The runner
 recomputes it. **A claimed level that differs from the computed level is a
@@ -78,8 +79,8 @@ build failure** — the point of a conformance claim is that it is checked.
 
 | Implementation | Language | Level |
 | :--- | :--- | :--- |
-| [`agtmls`](https://github.com/sebastienrousseau/agtmls) | Python (stdlib only) | L3 |
-| [`agtmls-core`](https://github.com/sebastienrousseau/agtmls-core) | Rust | L3 |
+| [`agtmls`](https://github.com/sebastienrousseau/agtmls) | Python (stdlib only) | L5 |
+| [`agtmls-core`](https://github.com/sebastienrousseau/agtmls-core) | Rust | L5 |
 
 Both are replayed against this corpus in CI. **If they disagree, both builds
 fail.** That is the mechanism that keeps two implementations from becoming two
