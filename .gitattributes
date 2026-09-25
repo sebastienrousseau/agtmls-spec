@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Signatures cover exact bytes (spec 9.2) and attestations are compared byte
+# for byte (spec 10), so these vectors must never be rewritten on checkout.
+# Git for Windows converts text files to CRLF by default, which turned every
+# signature vector into bad_signature on a Windows runner.
+corpus/signatures/** -text
+corpus/advisories/** -text
+corpus/attestations/** -text
