@@ -17,6 +17,12 @@ including after withdrawal.
   other at the new level **L5 (Trust)**: signature and advisory verdicts
   with their exit codes, and attestations byte for byte.
 
+### Fixed
+
+- The signature, advisory and attestation vectors are checked out as exact
+  bytes (`.gitattributes`): Git for Windows rewrote them with CRLF, so
+  every signature vector failed there.
+
 ### Added
 
 - Three `AGT-CAP-001` corpus cases: `allowed-tools` written
