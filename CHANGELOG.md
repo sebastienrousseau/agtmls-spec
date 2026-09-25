@@ -16,6 +16,11 @@ including after withdrawal.
   attestation vector, and `conformance/run.py` compares them with each
   other at the new level **L5 (Trust)**: signature and advisory verdicts
   with their exit codes, and attestations byte for byte.
+- §4.3: normalised matching removes the code points `AGT-STEG-001`
+  declares and applies NFKC before collapsing whitespace, so a keyword
+  split by a zero-width space or a tag character, or spelt in fullwidth
+  letters, matches. `AGT-STEG-001` still reports the hidden code points.
+  Three corpus cases.
 
 ### Fixed
 
