@@ -283,6 +283,11 @@ def run_analyzer_level(impls: list[Implementation]) -> tuple[int, int, list[str]
     return passed, len(cases), failures
 
 
+# Written by build_install_fixture beside the target: the second agent's
+# bundle skills, which the first agent never installed.
+CODEX_ONLY = "codex-only.json"
+
+
 def build_install_fixture(python: Implementation, root: Path) -> Path | None:
     """Create an installed tree, then tamper with it.
 
@@ -302,6 +307,22 @@ def build_install_fixture(python: Implementation, root: Path) -> Path | None:
     if proc.returncode != 0 or not (target / ".agtmls" / "manifest.json").exists():
         return None
 
+    # A second agent with a bundle the first did not install (chapter 6.2,
+    # "One lockfile, several agents"): its skills must never be reported
+    # against the first agent's directory.
+    bundle = second_agent_bundle(python)
+    if bundle is not None:
+        proc = subprocess.run(
+            [sys.executable, str(python.location / "scripts" / "agtmls.py"),
+             "install", "rust", "codex", "--target", str(target), "--copy", "--bundle", bundle],
+            capture_output=True, text=True, check=False,
+        )
+        if proc.returncode != 0:
+            return None
+        index = json.loads((python.location / "index.json").read_text(encoding="utf-8"))
+        codex_only = sorted(s["name"] for s in index["skills"] if s.get("bundle") == bundle)
+        (root / CODEX_ONLY).write_text(json.dumps(codex_only), encoding="utf-8")
+
     skills = sorted((target / ".claude" / "skills").iterdir())
     if len(skills) >= 2:
         # One modified, one removed: both implementations must report both.
@@ -310,31 +331,63 @@ def build_install_fixture(python: Implementation, root: Path) -> Path | None:
     return target
 
 
+def second_agent_bundle(python: Implementation) -> str | None:
+    """A bundle in the registry the fixture is built from, or None."""
+    index = python.location / "index.json"
+    if not index.exists():
+        return None
+    bundles = sorted({s["bundle"] for s in json.loads(index.read_text(encoding="utf-8"))["skills"] if s.get("bundle")})
+    return bundles[0] if bundles else None
+
+
 def run_registry_level(impls: list[Implementation], fixture: Path) -> tuple[int, int, list[str]]:
     """L4. Implementations must agree about whether an install can be trusted.
 
     A lockfile is an interop format: one implementation writes it, another may
     verify it. Disagreeing about a tampered tree is the failure that matters,
     because it means one of them would pass an install the other rejects.
+
+    Agreement alone would pass two implementations that are wrong the same
+    way, so the second agent is also checked absolutely: a skill of the
+    bundle only that agent installed must not be reported against the first
+    (6.2). Which skills those are comes from the fixture build, never from
+    the lockfile under test.
     """
     failures: list[str] = []
-    results: dict[str, tuple[int, set[tuple[str, str]]]] = {}
-    for impl in impls:
-        try:
-            results[impl.name] = impl.verify_install(fixture, "claude")
-        except RuntimeError as exc:
-            failures.append(str(exc))
+    passed = total = 0
+    agents = ["claude", "codex"] if (fixture / ".codex" / "skills").is_dir() else ["claude"]
+    marker = fixture.parent / CODEX_ONLY
+    codex_only = set(json.loads(marker.read_text(encoding="utf-8"))) if marker.exists() else set()
+    for agent in agents:
+        total += 1
+        before = len(failures)
+        results: dict[str, tuple[int, set[tuple[str, str]]]] = {}
+        for impl in impls:
+            try:
+                results[impl.name] = impl.verify_install(fixture, agent)
+            except RuntimeError as exc:
+                failures.append(f"{agent}: {exc}")
 
-    if len(results) > 1:
-        codes = {name: code for name, (code, _) in results.items()}
-        if len(set(codes.values())) > 1:
-            failures.append(f"exit codes disagree: {codes}")
-        problems = {name: problems for name, (_, problems) in results.items()}
-        values = list(problems.values())
-        if any(v != values[0] for v in values):
-            detail = "".join(f"      {n:<8} {sorted(v)}\n" for n, v in problems.items())
-            failures.append(f"verify results disagree\n{detail}")
-    return (0 if failures else 1), 1, failures
+        if len(results) > 1:
+            codes = {name: code for name, (code, _) in results.items()}
+            if len(set(codes.values())) > 1:
+                failures.append(f"{agent}: exit codes disagree: {codes}")
+            problems = {name: problems for name, (_, problems) in results.items()}
+            values = list(problems.values())
+            if any(v != values[0] for v in values):
+                detail = "".join(f"      {n:<8} {sorted(v)}\n" for n, v in problems.items())
+                failures.append(f"{agent}: verify results disagree\n{detail}")
+        passed += len(failures) == before
+
+        if agent == "claude" and codex_only:
+            total += 1
+            before = len(failures)
+            for name, (_, found) in results.items():
+                leaked = sorted(skill for skill, _ in found if skill in codex_only)
+                if leaked:
+                    failures.append(f"{name}: reports codex-only skill(s) against claude: {', '.join(leaked)}")
+            passed += len(failures) == before
+    return passed, total, failures
 
 
 def _agree(label: str, results: dict[str, object], expected: object) -> list[str]:

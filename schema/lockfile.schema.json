@@ -30,6 +30,12 @@
             "type": "array",
             "items": { "type": "string" },
             "description": "Mode bits are excluded from the digest by design (spec 3.4) because they do not survive every transport. Recorded here so a lost executable bit can be repaired without being mistaken for tampering."
+          },
+          "agents": {
+            "type": "array",
+            "items": { "type": "string" },
+            "uniqueItems": true,
+            "description": "The native agents whose skills directory holds this entry (spec 6.2). Absent in lockfiles written before the field existed; such an entry serves every agent."
           }
         }
       }

@@ -32,21 +32,47 @@ decorated `ln -s`.
     {
       "name": "cross-language-port",
       "integrity": "sha256:8a9bee28a846d03a01f8432a4b06d0679b40b3ee68c18a765a1f08a3ec511879",
-      "path": ".claude/skills/cross-language-port",
-      "executable_files": ["harness/port-check.sh", "harness/golden-diff.sh"]
+      "path": "cross-language-port",
+      "executable_files": ["harness/port-check.sh", "harness/golden-diff.sh"],
+      "agents": ["claude", "codex"]
     }
   ]
 }
 ```
 
-`mode` is `symlink` or `copy`. `executable_files` records the mode bits that
-[`03-integrity.md`](03-integrity.md) deliberately excludes from the digest, so
-a lost executable bit can be repaired without being mistaken for tampering.
+`mode` is `symlink` or `copy`. `path` is relative to the agent's skills
+directory (`.claude/skills/`, `.codex/skills/`, ...). `executable_files`
+records the mode bits that [`03-integrity.md`](03-integrity.md) deliberately
+excludes from the digest, so a lost executable bit can be repaired without
+being mistaken for tampering.
+
+### One lockfile, several agents
+
+A target holds one lockfile, and more than one agent may be installed in it.
+`agents` names the native agents whose skills directory holds the entry. An
+entry is one skill at one digest: two agents holding different versions of a
+skill have one entry each.
+
+- Installing for an agent MUST change only that agent's membership: remove
+  it from every entry, then add it to the entries it installed. An entry no
+  agent holds is dropped.
+- Uninstalling an agent MUST remove only that agent's membership, except for
+  a skill it left in place (6.6), and MUST remove the lockfile only when no
+  entry names any agent.
+- An entry without `agents` was written before the field existed. It MUST be
+  treated as serving every agent. An implementation that rewrites the
+  lockfile SHOULD resolve it to the agents whose skills directory holds that
+  skill.
+
+Rewriting the whole lockfile on each install made the second agent's install
+erase the first agent's record, so the first agent's `verify` failed on a
+tree nobody had touched.
 
 ## 6.3 Verification
 
-`agtmls verify <agent>` MUST recompute each skill's digest and compare it
-with `integrity`.
+`agtmls verify <agent>` MUST recompute the digest of each entry serving that
+agent and compare it with `integrity`. Entries serving only other agents MUST
+NOT be reported: they describe another directory.
 
 | Outcome | Meaning |
 | :--- | :--- |

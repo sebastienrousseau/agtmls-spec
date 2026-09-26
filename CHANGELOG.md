@@ -19,6 +19,20 @@ including after withdrawal.
   join the three already there: an unquoted tab-separated grant and a YAML
   flow list. Carried forward from the superseded #1.
 
+### Changed (lockfile, chapter 6)
+
+- Lockfile entries name the agents they serve (`agents`). One lockfile
+  serves every agent in a target, and rewriting it whole on each install
+  erased the first agent's record, so its `verify` failed on an untouched
+  tree. Installing or uninstalling an agent now changes only that agent's
+  membership; `verify <agent>` compares only the entries serving it. An
+  entry without `agents` serves every agent, so existing lockfiles stay
+  valid, and `schema_version` stays 1.
+- The 6.2 example's `path` was target-relative; it is relative to the
+  agent's skills directory, as both implementations write and read it.
+- L4 conformance installs a second agent with a bundle and requires every
+  implementation to verify each agent against its own entries.
+
 ### Added (rules)
 
 - `AGT-SUPPLY-003` (medium): a download checked only against a checksum
