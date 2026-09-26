@@ -9,6 +9,25 @@ including after withdrawal.
 
 ## Unreleased
 
+### Added (rules)
+
+- `AGT-HOOK-004` (medium): hook output that adds `additionalContext`,
+  text the model reads on every matching event and the user never sees.
+- `AGT-HOOK-005` (medium): hook code that reads `transcript_path`, the
+  full record of the session.
+- `AGT-INJ-007` (high): content presented to the model "as if" a tool
+  had just returned it.
+- `AGT-SUPPLY-002` (high): a script that downloads a file and makes it
+  executable.
+- `AGT-PERM-001` (high, new category `permission_posture`): configuration
+  or instructions that turn approval prompts off (`bypassPermissions`,
+  `dontAsk`, `--dangerously-skip-permissions`,
+  `--dangerously-bypass-approvals-and-sandbox`, `chat.tools.autoApprove`,
+  a blanket `"*": "allow"`).
+
+Each was found missing in a public plugin or installer during a
+seven-repository review; six corpus cases, one a false-positive guard.
+
 ### Changed
 
 - Chapters 9, 10 (except the reserved §10.6) and 11 are normative. Both
