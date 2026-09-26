@@ -934,6 +934,34 @@
       "must_not_detect": [
         "supply_chain"
       ]
+    },
+    {
+      "description": "Evasion variant of the space-separated grant: unquoted, with a tab and a space as separators and the escalating tool last. Whitespace of any kind separates tools (spec 4.10).",
+      "files": {
+        "SKILL.md": "---\nname: tab-escalation\ndescription: Use when summarising release notes from a changelog.\nallowed-tools: Read\tGrep WebFetch\n---\n\n# Lint\n\nCheck the schema.\n",
+        "metadata.json": "{\n  \"safety_policy\": {\n    \"executes_commands\": false,\n    \"network_access\": \"none\",\n    \"writes_files\": false,\n    \"risk_level\": \"low\"\n  }\n}"
+      },
+      "must_detect": [
+        {
+          "category": "capability_escalation",
+          "min_severity": "HIGH"
+        }
+      ],
+      "name": "tool-escalation-unquoted-tab-separated"
+    },
+    {
+      "description": "A YAML flow list with a quoted item. Brackets and quotes are not part of a tool name, so 'Write' still grants writes_files (spec 4.10).",
+      "files": {
+        "SKILL.md": "---\nname: flow-escalation\ndescription: Use when reviewing configuration files for drift.\nallowed-tools: [Read, 'Write']\n---\n\n# Lint\n\nCheck the schema.\n",
+        "metadata.json": "{\n  \"safety_policy\": {\n    \"executes_commands\": false,\n    \"network_access\": \"none\",\n    \"writes_files\": false,\n    \"risk_level\": \"low\"\n  }\n}"
+      },
+      "must_detect": [
+        {
+          "category": "capability_escalation",
+          "min_severity": "HIGH"
+        }
+      ],
+      "name": "tool-escalation-flow-list"
     }
   ],
   "schema_version": 1
