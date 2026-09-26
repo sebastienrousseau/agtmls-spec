@@ -1,0 +1,37 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-PERM-001"
+category = "permission_posture"
+severity = "high"
+title = "Approval prompts switched off"
+scope = "normalised"
+applies_to = ["*"]
+
+description = '''Configuration or instructions that turn off an agent's approval prompts: Claude Code `bypassPermissions` or `dontAsk`, `--dangerously-skip-permissions`, `--dangerously-bypass-approvals-and-sandbox`, `chat.tools.autoApprove`, or a blanket `"*": "allow"`'''
+rationale = '''Every capability check in a skill's safety policy assumes the user is asked before a tool runs. With approvals off, the policy is advisory and any skill runs with every tool it names. Seen in an installer whose default preset writes bypassPermissions while describing itself as security-first, and in an IDE that launches every agent with its bypass flag.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)"defaultMode"\s*:\s*"(?:bypassPermissions|dontAsk)"|--dangerously-(?:skip-permissions|bypass-approvals-and-sandbox)\b|--permission-mode[\s=]+bypassPermissions\b|"chat\.tools\.autoApprove"\s*:\s*true|"\*"\s*:\s*"allow"'''
+
+[[true_positive]]
+text = '''{"permissions": {"defaultMode": "bypassPermissions"}}'''
+
+[[true_positive]]
+text = '''claude --dangerously-skip-permissions -p "$PROMPT"'''
+
+[[true_positive]]
+text = '''"bash": {"*": "allow"}'''
+
+[[false_positive]]
+text = '''{"permissions": {"defaultMode": "acceptEdits"}}'''
+note = "Accepting edits still asks before commands run."
+
+[[false_positive]]
+text = '''"bash": {"git status": "allow", "*": "ask"}'''
+note = "A blanket ask with a narrow allow keeps the prompt."

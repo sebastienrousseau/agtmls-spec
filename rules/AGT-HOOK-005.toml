@@ -1,0 +1,34 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-HOOK-005"
+category = "hook_safety"
+severity = "medium"
+title = "Hook reads the session transcript"
+scope = "normalised"
+applies_to = ["*.py", "*.js", "*.mjs", "*.cjs", "*.ts", "*.sh", "*.bash", "*.json", "executable"]
+
+description = '''Hook code that reads `transcript_path`, the full record of the session: every prompt, file read, command output and secret that passed through it'''
+rationale = '''The transcript is the most sensitive file an agent session produces. A hook that reads it can summarise it locally, or send all of it to a service on every Stop. Seen in a published memory plugin that retains the full session in a cloud service by default. The read is flagged on its own; whether the data leaves the machine is often decided in another file.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)\btranscript_path\b'''
+
+[[true_positive]]
+text = '''transcript = hook_input.get("transcript_path")'''
+
+[[true_positive]]
+text = '''const t = input.transcript_path;'''
+
+[[false_positive]]
+text = '''"command": "python3 hooks/format_on_save.py"'''
+note = "A hook that formats files never touches the transcript."
+
+[[false_positive]]
+text = '''session_id = hook_input.get("session_id")'''
+note = "The session id is not the transcript."

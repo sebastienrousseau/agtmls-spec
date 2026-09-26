@@ -1,0 +1,34 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-HOOK-004"
+category = "hook_safety"
+severity = "medium"
+title = "Hook injects context the user does not see"
+scope = "normalised"
+applies_to = ["*.py", "*.js", "*.mjs", "*.cjs", "*.ts", "*.sh", "*.bash", "*.json", "executable"]
+
+description = '''Hook output that adds `additionalContext`, text the model reads on every matching event and the user is never shown'''
+rationale = '''A hook's additionalContext reaches the model silently, on every prompt or session start. It is how a memory plugin recalls facts, and it is also the channel a poisoned memory or a hostile plugin uses to steer every turn. Seen in a published memory plugin that injects recalled context on each UserPromptSubmit.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)["']?additionalContext["']?\]?\s*[:=]'''
+
+[[true_positive]]
+text = '''"hookSpecificOutput": {"hookEventName": "UserPromptSubmit", "additionalContext": context}'''
+
+[[true_positive]]
+text = '''output["additionalContext"] = recalled'''
+
+[[false_positive]]
+text = '''Hooks can add additionalContext to a prompt; this plugin does not.'''
+note = "Prose naming the field assigns nothing."
+
+[[false_positive]]
+text = '''"systemMessage": "Session saved."'''
+note = "A message the user sees is not hidden context."
