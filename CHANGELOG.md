@@ -11,6 +11,14 @@ including after withdrawal.
 
 ### Added (rules)
 
+- `AGT-SUPPLY-003` (medium): a download checked only against a checksum
+  from the same place, either the artifact URL with a `.sha256` or
+  `.sha512` suffix, or a checksums file from the same release. It proves
+  transit integrity, not provenance. Three corpus cases, one guarding a
+  pinned digest and a signature check.
+
+### Added (rules)
+
 - `AGT-HOOK-004` (medium): hook output that adds `additionalContext`,
   text the model reads on every matching event and the user never sees.
 - `AGT-HOOK-005` (medium): hook code that reads `transcript_path`, the

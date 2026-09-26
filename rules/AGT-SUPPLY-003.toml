@@ -1,0 +1,37 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-SUPPLY-003"
+category = "supply_chain"
+severity = "medium"
+title = "Checksum fetched from the same place as its artifact"
+scope = "normalised"
+applies_to = ["*.sh", "*.bash", "*.zsh", "*.ps1", "*.py", "*.js", "*.mjs", "*.ts", "*.md", "executable"]
+
+description = '''A download verified only against a checksum fetched from the same place: the artifact URL with a .sha256 or .sha512 suffix, or a checksums file from the same release'''
+rationale = '''Whoever can replace the artifact at that URL can replace the checksum beside it, so the check proves only that the bytes were not corrupted in transit. It is not provenance. Pin the digest in the script, or verify a signature from a key the script already holds. Seen in a published skill launcher that verified a downloaded engine against "$url.sha256", and in an installer that checked its binary against checksums.txt from the same GitHub release.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)\b(?:curl|wget|Invoke-WebRequest|iwr|urlretrieve|urlopen|fetch)\b[^;&|]{0,200}?\$\{?\w+\}?\.sha(?:256|512)(?:sum)?\b|/releases/download/[^\s"'<>]*/(?:checksums\.txt|sha256sums(?:\.txt)?|sha512sums(?:\.txt)?)\b'''
+
+[[true_positive]]
+text = '''curl -fsSL --retry 2 -o "$tmp.sha256" "$url.sha256" && expected=$(cut -d' ' -f1 < "$tmp.sha256")'''
+
+[[true_positive]]
+text = '''checksums_url="https://github.com/${OWNER}/${REPO}/releases/download/${VERSION}/checksums.txt"'''
+
+[[true_positive]]
+text = '''wget -q -O tool.sha512 "${BASE}.sha512"'''
+
+[[false_positive]]
+text = '''echo "3f7a0c2e9b...  tool.tgz" | sha256sum -c -'''
+note = "A digest pinned in the script is the fix this rule asks for."
+
+[[false_positive]]
+text = '''curl -fsSL -o tool.tgz "$url" && minisign -Vm tool.tgz -P "$PUBKEY"'''
+note = "Verifying a signature from a key the script holds is provenance."
