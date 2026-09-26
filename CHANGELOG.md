@@ -9,6 +9,16 @@ including after withdrawal.
 
 ## Unreleased
 
+### Changed (rules, chapter 4)
+
+- How `AGT-CAP-001` tokenises `allowed-tools` is normative (§4.12):
+  whitespace and commas separate tools, quotes and `[...]` brackets are
+  ignored, and a parenthesised specifier such as `Bash(git log:*)` stays in
+  its token and counts as the tool before the `(`. Both implementations
+  already tokenise this way; the chapter now requires it. Two corpus cases
+  join the three already there: an unquoted tab-separated grant and a YAML
+  flow list. Carried forward from the superseded #1.
+
 ### Changed (lockfile, chapter 6)
 
 - Lockfile entries name the agents they serve (`agents`). One lockfile

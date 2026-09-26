@@ -200,3 +200,45 @@ opens, so the injection rules use `*`; a shell command is run from hook and CI
 configuration as well as from scripts, so the execution rules cover JSON, YAML
 and TOML.
 
+## 4.12 `AGT-CAP-001`: reading `allowed-tools`
+
+`AGT-CAP-001` compares the tools a `SKILL.md` frontmatter grants with the
+capabilities `metadata.json` `safety_policy` admits to. Every implementation
+MUST read the grant the same way, or the rule fires in one and not another.
+
+**Locating the field.** The value is the remainder of the first frontmatter
+line that begins `allowed-tools:`, with leading spaces and tabs removed. A
+skill with no frontmatter, or no such line, grants no tools.
+
+**Tokenising.** An implementation MUST split the value into tools exactly as
+this pattern's successive non-overlapping matches do, left to right:
+
+```text
+[^\s,()'"\[\]]+(?:\([^)]*\))?
+```
+
+where `\s` includes `0x1C`–`0x1F` (as Python's does; add them explicitly in
+an engine whose `\s` does not). In words:
+
+1. Whitespace **and** commas separate tools. The Agent Skills form is
+   space-separated, `allowed-tools: "Read Glob Bash"`, and MUST yield `Read`,
+   `Glob`, `Bash`. A comma-separated, tab-separated or mixed value yields the
+   same.
+2. Single quotes, double quotes and YAML flow-list brackets are never part of
+   a tool: `allowed-tools: [Bash, 'Read']` yields `Bash`, `Read`.
+3. A tool MAY carry a parenthesised specifier, which stays part of its token
+   even when it contains spaces: `Bash(git log:*)` is one tool. An opening
+   parenthesis with no closing one ends the token before it.
+
+**Capability lookup.** A tool's capability is looked up by the part of the
+token before its first `(`, in the `[tool_capabilities]` table of
+[`rules/AGT-CAP-001.toml`](../rules/AGT-CAP-001.toml) (10.5), so
+`Bash(git log:*)` narrows `Bash` and still grants `executes_commands`. A tool
+absent from the table grants nothing. Each granted tool whose capability the
+policy does not grant is one `AGT-CAP-001` finding.
+
+Splitting on commas alone is the defect this section exists to prevent. It
+returned `"Read Glob Bash"` as one tool of that name, which is in no table and
+grants nothing, so the rule could not fire on a skill written in the spec's
+own form. `corpus/security/` carries the space-separated, tab-separated,
+flow-list and scoped forms, and a grant within its policy.
