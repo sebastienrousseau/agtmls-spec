@@ -9,6 +9,12 @@ including after withdrawal.
 
 ## Unreleased
 
+### Changed (metadata, chapter 2)
+
+- `supported_agents` may name `antigravity`, a native install target
+  (skills in `.agents/skills`) that both implementations verify. The
+  schema's enum stopped at claude, codex and aider.
+
 ### Changed (rules, chapter 4)
 
 - How `AGT-CAP-001` tokenises `allowed-tools` is normative (§4.12):

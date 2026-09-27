@@ -9,7 +9,7 @@
     "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
     "owner": { "type": "string", "minLength": 1 },
     "maturity": { "enum": ["draft", "hardened", "project", "deprecated"] },
-    "supported_agents": { "type": "array", "items": { "enum": ["claude", "codex", "aider"] } },
+    "supported_agents": { "type": "array", "items": { "enum": ["claude", "codex", "antigravity", "aider"] } },
     "required_tools": { "type": "array", "items": { "type": "string" } },
     "safety_policy": {
       "type": "object",
