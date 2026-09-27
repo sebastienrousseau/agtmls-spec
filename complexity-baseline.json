@@ -1,0 +1,13 @@
+{
+  "ceilings": {
+    "cognitive": 15,
+    "cyclomatic": 10,
+    "file_lines": 500,
+    "halstead": 30.0,
+    "lines": 60
+  },
+  "files": {},
+  "functions": {},
+  "generated_by": "scripts/check-complexity.py --write",
+  "schema_version": 1
+}

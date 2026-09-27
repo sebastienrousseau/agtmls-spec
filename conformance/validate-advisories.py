@@ -26,31 +26,42 @@ TIMESTAMP = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
-def feed_problems(feed: dict) -> list[str]:
+def _affected_problems(name: str, affected: list) -> list[str]:
+    """An advisory's `affected` entries: present, AgtMLS, and naming digests."""
+    if not affected:
+        return [f"{name}: no affected entries"]
     problems = []
-    seen = set()
-    for advisory in feed.get("advisories", []):
-        name = advisory.get("id", "?")
-        if not ADVISORY_ID.match(name):
-            problems.append(f"{name}: id is not AGT-ADV-YYYY-NNN")
-        if name in seen:
-            problems.append(f"{name}: id is not unique")
-        seen.add(name)
-        for field in ("modified", "published", "withdrawn"):
-            if field in advisory and not TIMESTAMP.match(advisory[field]):
-                problems.append(f"{name}: {field} is not an RFC 3339 UTC timestamp")
-        if "modified" not in advisory:
-            problems.append(f"{name}: OSV requires modified")
-        affected = advisory.get("affected") or []
-        if not affected:
-            problems.append(f"{name}: no affected entries")
-        for entry in affected:
-            if entry.get("package", {}).get("ecosystem") != "AgtMLS":
-                problems.append(f"{name}: affected ecosystem is not AgtMLS")
-            digests = entry.get("ecosystem_specific", {}).get("digests") or []
-            if not digests or not all(DIGEST.match(d) for d in digests):
-                problems.append(f"{name}: affected needs one or more sha256: digests")
+    for entry in affected:
+        if entry.get("package", {}).get("ecosystem") != "AgtMLS":
+            problems.append(f"{name}: affected ecosystem is not AgtMLS")
+        digests = entry.get("ecosystem_specific", {}).get("digests") or []
+        if not digests or not all(DIGEST.match(d) for d in digests):
+            problems.append(f"{name}: affected needs one or more sha256: digests")
     return problems
+
+
+def _advisory_problems(advisory: dict, seen: set[str]) -> list[str]:
+    """One advisory's id, timestamps and affected entries."""
+    name = advisory.get("id", "?")
+    problems = []
+    if not ADVISORY_ID.match(name):
+        problems.append(f"{name}: id is not AGT-ADV-YYYY-NNN")
+    if name in seen:
+        problems.append(f"{name}: id is not unique")
+    seen.add(name)
+    problems += [
+        f"{name}: {field} is not an RFC 3339 UTC timestamp"
+        for field in ("modified", "published", "withdrawn")
+        if field in advisory and not TIMESTAMP.match(advisory[field])
+    ]
+    if "modified" not in advisory:
+        problems.append(f"{name}: OSV requires modified")
+    return problems + _affected_problems(name, advisory.get("affected") or [])
+
+
+def feed_problems(feed: dict) -> list[str]:
+    seen: set[str] = set()
+    return [problem for advisory in feed.get("advisories", []) for problem in _advisory_problems(advisory, seen)]
 
 
 def revoked_by(feed: dict, lockfile: dict) -> list[str]:

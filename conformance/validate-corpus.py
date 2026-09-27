@@ -19,74 +19,83 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def main() -> int:
-    errors: list[str] = []
+# --- rules -----------------------------------------------------------
 
-    # --- rules -----------------------------------------------------------
-    rule_files = sorted((ROOT / "rules").glob("*.toml"))
-    rule_ids: set[str] = set()
-    for path in rule_files:
-        text = path.read_text(encoding="utf-8")
-        match = re.search(r'^id = "(.*?)"', text, re.MULTILINE)
-        if not match:
-            errors.append(f"{path.name}: no id")
-            continue
-        rule_id = match.group(1)
-        rule_ids.add(rule_id)
-        if rule_id != path.stem:
-            errors.append(f"{path.name}: id {rule_id!r} does not match filename")
-        if not re.match(r"^AGT-[A-Z]+-\d{3}$", rule_id):
-            errors.append(f"{rule_id}: identifier does not match AGT-<CLASS>-<NNN>")
-        selectors = re.search(r"^applies_to = (\[.*\])$", text, re.MULTILINE)
-        if selectors:
-            for selector in json.loads(selectors.group(1)):
-                if not re.fullmatch(r"\*|\*\.[A-Za-z0-9]+|executable", selector):
-                    errors.append(f"{rule_id}: applies_to selector {selector!r} is not *, *.<ext> or executable (spec 4.11)")
-        if "pattern = '''" in text:
-            pattern = re.search(r"^pattern = '''(.*?)'''", text, re.MULTILINE | re.DOTALL).group(1)
-            if not pattern.startswith("(?i)"):
-                errors.append(f"{rule_id}: pattern must carry an inline (?i); a host compile flag does not survive export (spec 4.6)")
-            if "\\\\" in pattern:
-                errors.append(f"{rule_id}: doubled backslash in a TOML literal string (spec 4.6)")
-            try:
-                re.compile(pattern)
-            except re.error as exc:
-                errors.append(f"{rule_id}: pattern does not compile: {exc}")
-            has_examples = "[[true_positive]]" in text
-            has_policy = "false_positive_policy" in text
-            if not has_examples:
-                errors.append(f"{rule_id}: declares a pattern but no true_positive (spec 4.4)")
-            if "[[false_positive]]" not in text and not has_policy:
-                errors.append(
-                    f"{rule_id}: no false_positive and no false_positive_policy. "
-                    "A rule with neither has not been tested against reality (spec 4.5)"
-                )
+def _pattern_problems(rule_id: str, text: str) -> list[str]:
+    """A pattern rule's portability (spec 4.6) and its examples (4.4, 4.5)."""
+    errors = []
+    pattern = re.search(r"^pattern = '''(.*?)'''", text, re.MULTILINE | re.DOTALL).group(1)
+    if not pattern.startswith("(?i)"):
+        errors.append(f"{rule_id}: pattern must carry an inline (?i); a host compile flag does not survive export (spec 4.6)")
+    if "\\\\" in pattern:
+        errors.append(f"{rule_id}: doubled backslash in a TOML literal string (spec 4.6)")
+    try:
+        re.compile(pattern)
+    except re.error as exc:
+        errors.append(f"{rule_id}: pattern does not compile: {exc}")
+    if "[[true_positive]]" not in text:
+        errors.append(f"{rule_id}: declares a pattern but no true_positive (spec 4.4)")
+    if "[[false_positive]]" not in text and "false_positive_policy" not in text:
+        errors.append(
+            f"{rule_id}: no false_positive and no false_positive_policy. "
+            "A rule with neither has not been tested against reality (spec 4.5)"
+        )
+    return errors
 
-    # --- digest corpus ---------------------------------------------------
-    digest = json.loads((ROOT / "corpus/digest/cases.json").read_text(encoding="utf-8"))
+
+def rule_problems(path: Path) -> tuple[str | None, list[str]]:
+    """(the rule's id, or None when it declares none; its problems)."""
+    text = path.read_text(encoding="utf-8")
+    match = re.search(r'^id = "(.*?)"', text, re.MULTILINE)
+    if not match:
+        return None, [f"{path.name}: no id"]
+    rule_id = match.group(1)
+    errors = []
+    if rule_id != path.stem:
+        errors.append(f"{path.name}: id {rule_id!r} does not match filename")
+    if not re.match(r"^AGT-[A-Z]+-\d{3}$", rule_id):
+        errors.append(f"{rule_id}: identifier does not match AGT-<CLASS>-<NNN>")
+    selectors = re.search(r"^applies_to = (\[.*\])$", text, re.MULTILINE)
+    for selector in json.loads(selectors.group(1)) if selectors else []:
+        if not re.fullmatch(r"\*|\*\.[A-Za-z0-9]+|executable", selector):
+            errors.append(f"{rule_id}: applies_to selector {selector!r} is not *, *.<ext> or executable (spec 4.11)")
+    if "pattern = '''" in text:
+        errors += _pattern_problems(rule_id, text)
+    return rule_id, errors
+
+
+# --- digest corpus ---------------------------------------------------
+
+def _digest_case_problems(case: dict, by_name: dict) -> list[str]:
+    errors = [f"digest/{case.get('name', '?')}: missing {field}"
+              for field in ("name", "why", "expected_digest", "expected_manifest") if field not in case]
+    if not str(case.get("expected_digest", "")).startswith("sha256:"):
+        errors.append(f"digest/{case['name']}: digest must be sha256:-prefixed (spec 3.10)")
+    twin = case.get("same_digest_as")
+    if twin and twin not in by_name:
+        errors.append(f"digest/{case['name']}: same_digest_as names an unknown case {twin!r}")
+    elif twin and case["expected_digest"] != by_name[twin]["expected_digest"]:
+        errors.append(f"digest/{case['name']}: declared equal to {twin} but digests differ")
+    return errors
+
+
+def digest_problems(digest: dict) -> list[str]:
     by_name = {c["name"]: c for c in digest["cases"]}
-    for case in digest["cases"]:
-        for field in ("name", "why", "expected_digest", "expected_manifest"):
-            if field not in case:
-                errors.append(f"digest/{case.get('name', '?')}: missing {field}")
-        if not str(case.get("expected_digest", "")).startswith("sha256:"):
-            errors.append(f"digest/{case['name']}: digest must be sha256:-prefixed (spec 3.10)")
-        twin = case.get("same_digest_as")
-        if twin:
-            if twin not in by_name:
-                errors.append(f"digest/{case['name']}: same_digest_as names an unknown case {twin!r}")
-            elif case["expected_digest"] != by_name[twin]["expected_digest"]:
-                errors.append(f"digest/{case['name']}: declared equal to {twin} but digests differ")
+    errors = [e for case in digest["cases"] for e in _digest_case_problems(case, by_name)]
     distinct = {c["name"]: c["expected_digest"] for c in digest["cases"] if "same_digest_as" not in c}
     if len(set(distinct.values())) != len(distinct):
         errors.append("digest: two cases that must differ share a digest")
+    return errors
 
-    # --- security corpus -------------------------------------------------
-    security = json.loads((ROOT / "corpus/security/corpus.json").read_text(encoding="utf-8"))
+
+# --- security corpus -------------------------------------------------
+
+def security_problems(security: dict, rule_files: list[Path]) -> list[str]:
     categories = {
         re.search(r'^category = "(.*?)"', p.read_text(encoding="utf-8"), re.MULTILINE).group(1)
         for p in rule_files
     }
+    errors = []
     covered: set[str] = set()
     for case in security["cases"]:
         if not case.get("description"):
@@ -98,6 +107,22 @@ def main() -> int:
     uncovered = categories - covered - {"scan_limit"}
     if uncovered:
         errors.append(f"no security corpus case covers: {', '.join(sorted(uncovered))}")
+    return errors
+
+
+def main() -> int:
+    errors: list[str] = []
+    rule_files = sorted((ROOT / "rules").glob("*.toml"))
+    rule_ids: set[str] = set()
+    for path in rule_files:
+        rule_id, found = rule_problems(path)
+        if rule_id is not None:
+            rule_ids.add(rule_id)
+        errors += found
+    digest = json.loads((ROOT / "corpus/digest/cases.json").read_text(encoding="utf-8"))
+    errors += digest_problems(digest)
+    security = json.loads((ROOT / "corpus/security/corpus.json").read_text(encoding="utf-8"))
+    errors += security_problems(security, rule_files)
 
     if errors:
         for error in errors:
