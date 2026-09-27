@@ -9,6 +9,16 @@ including after withdrawal.
 
 ## Unreleased
 
+### Changed (conformance tooling)
+
+- The conformance scripts meet the portfolio's complexity ceilings
+  (cyclomatic 10, cognitive 15, Halstead difficulty 30, 60 lines per
+  function, 500 per file), checked in CI by agtmls' `check-complexity.py`
+  against `complexity-baseline.json`, which is empty. `run.py`'s levels,
+  `validate-corpus.py` and `validate-advisories.py` were split into
+  smaller functions; their output is byte-identical, including every
+  failure path the runner was checked on.
+
 ### Changed (rules, chapter 4)
 
 - How `AGT-CAP-001` tokenises `allowed-tools` is normative (§4.12):

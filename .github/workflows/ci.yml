@@ -45,6 +45,12 @@ jobs:
           ./conformance/run.py \
             --python .agtmls \
             --rust .agtmls-core/target/release/agtmls-rs
+      # The portfolio complexity ceilings (~/Code/AGENTS.md section 0), measured
+      # by agtmls' own checker from the checkout above rather than a copy here.
+      - name: Complexity ceilings
+        run: |
+          python3 .agtmls/scripts/check-complexity.py --root . --paths conformance \
+            --baseline complexity-baseline.json
 
   corpus-integrity:
     name: corpus is well-formed (${{ matrix.python-version }})

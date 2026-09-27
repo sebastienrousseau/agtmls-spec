@@ -25,6 +25,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -159,87 +160,102 @@ def materialise(case: dict, root: Path) -> Path:
     return root
 
 
+def _ask(impls: list[Implementation], call) -> tuple[dict[str, object], list[str]]:
+    """Each implementation's answer to `call(impl)`, and the errors of those
+    that could not answer."""
+    results: dict[str, object] = {}
+    failures: list[str] = []
+    for impl in impls:
+        try:
+            results[impl.name] = call(impl)
+        except RuntimeError as exc:
+            failures.append(str(exc))
+    return results, failures
+
+
+def _digest_case(case: dict, impls: list[Implementation], tmp: Path) -> tuple[bool, list[str]]:
+    """(passed, failures) for one digest vector."""
+    root = materialise(case, tmp / case["name"])
+    expected = case["expected_digest"]
+    results, failures = _ask(impls, lambda impl: impl.digest(root))
+    rows = "".join(f"      {n:<8} {d}\n" for n, d in results.items())
+    wrong = {n: d for n, d in results.items() if d != expected}
+    if wrong:
+        failures.append(f"{case['name']}: {case.get('why', '')}\n      expected {expected}\n" + rows)
+    # Differential: even if both were wrong in the same way, say so.
+    if len(set(results.values())) > 1:
+        failures.append(f"{case['name']}: IMPLEMENTATIONS DISAGREE\n" + rows)
+    return not wrong, failures
+
+
 def run_digest_level(impls: list[Implementation]) -> tuple[int, int, list[str]]:
     """L2. Returns (passed, total, failures)."""
     corpus = json.loads((SPEC_ROOT / "corpus" / "digest" / "cases.json").read_text(encoding="utf-8"))
     cases = corpus["cases"]
     failures: list[str] = []
     passed = 0
-
     with tempfile.TemporaryDirectory(prefix="agtmls-conformance-") as raw:
-        tmp = Path(raw)
         for case in cases:
-            root = materialise(case, tmp / case["name"])
-            expected = case["expected_digest"]
-            results: dict[str, str] = {}
-            for impl in impls:
-                try:
-                    results[impl.name] = impl.digest(root)
-                except RuntimeError as exc:
-                    failures.append(str(exc))
-                    continue
-
-            wrong = {n: d for n, d in results.items() if d != expected}
-            if wrong:
-                failures.append(
-                    f"{case['name']}: {case.get('why', '')}\n"
-                    f"      expected {expected}\n"
-                    + "".join(f"      {n:<8} {d}\n" for n, d in results.items())
-                )
-            else:
-                passed += 1
-
-            # Differential: even if both were wrong in the same way, say so.
-            if len(set(results.values())) > 1:
-                failures.append(
-                    f"{case['name']}: IMPLEMENTATIONS DISAGREE\n"
-                    + "".join(f"      {n:<8} {d}\n" for n, d in results.items())
-                )
+            ok, found = _digest_case(case, impls, Path(raw))
+            passed += ok
+            failures += found
     return passed, len(cases), failures
+
+
+def _literal(text: str, key: str) -> str | None:
+    match = re.search(rf"^{key} = '''(.*?)'''", text, re.MULTILINE | re.DOTALL)
+    return match.group(1) if match else None
+
+
+def _collect(text: str, table: str) -> list[str]:
+    return re.findall(rf"\[\[{table}\]\]\ntext = '''(.*?)'''", text, re.DOTALL)
+
+
+def _flatten(value: str) -> str:
+    return re.sub(r"\s+", " ", value)
+
+
+def _check_rule(path: Path) -> tuple[int, list[str]]:
+    """(examples checked, failures) for one rule file."""
+    text = path.read_text(encoding="utf-8")
+    rule_id = _literal(text, "id") or re.search(r'^id = "(.*?)"', text, re.MULTILINE).group(1)
+    failures = [f"{path.name}: declares id {rule_id!r}"] if rule_id != path.stem else []
+    pattern = _literal(text, "pattern")
+    if pattern is None:
+        return 0, failures
+    try:
+        compiled = re.compile(pattern)
+    except re.error as exc:
+        return 0, [*failures, f"{rule_id}: pattern does not compile: {exc}"]
+    positives = _collect(text, "true_positive")
+    negatives = _collect(text, "false_positive")
+    failures += [f"{rule_id}: true_positive not matched: {e!r}" for e in positives if not compiled.search(_flatten(e))]
+    failures += [f"{rule_id}: false_positive IS matched: {e!r}" for e in negatives if compiled.search(_flatten(e))]
+    return len(positives) + len(negatives), failures
 
 
 def run_rules_level() -> tuple[int, int, list[str]]:
     """Every rule must satisfy its own declared examples."""
-    import re
-
     failures: list[str] = []
-    rules = sorted((SPEC_ROOT / "rules").glob("*.toml"))
     checked = 0
-
-    def literal(text: str, key: str) -> str | None:
-        match = re.search(rf"^{key} = '''(.*?)'''", text, re.MULTILINE | re.DOTALL)
-        return match.group(1) if match else None
-
-    def collect(text: str, table: str) -> list[str]:
-        return re.findall(rf"\[\[{table}\]\]\ntext = '''(.*?)'''", text, re.DOTALL)
-
-    for path in rules:
-        text = path.read_text(encoding="utf-8")
-        rule_id = literal(text, "id") or re.search(r'^id = "(.*?)"', text, re.MULTILINE).group(1)
-        if rule_id != path.stem:
-            failures.append(f"{path.name}: declares id {rule_id!r}")
-        pattern = literal(text, "pattern")
-        if pattern is None:
-            continue
-        try:
-            compiled = re.compile(pattern)
-        except re.error as exc:
-            failures.append(f"{rule_id}: pattern does not compile: {exc}")
-            continue
-
-        def flatten(value: str) -> str:
-            return re.sub(r"\s+", " ", value)
-
-        for example in collect(text, "true_positive"):
-            checked += 1
-            if not compiled.search(flatten(example)):
-                failures.append(f"{rule_id}: true_positive not matched: {example!r}")
-        for example in collect(text, "false_positive"):
-            checked += 1
-            if compiled.search(flatten(example)):
-                failures.append(f"{rule_id}: false_positive IS matched: {example!r}")
-
+    for path in sorted((SPEC_ROOT / "rules").glob("*.toml")):
+        count, found = _check_rule(path)
+        checked += count
+        failures += found
     return checked, checked + len(failures), failures
+
+
+def _analyzer_case(case: dict, impls: list[Implementation], tmp: Path, rules_dir: Path) -> tuple[bool, list[str]]:
+    """(agreed, failures) for one security case."""
+    root = materialise(case, tmp / case["name"])
+    results, failures = _ask(impls, lambda impl: impl.audit(root, rules_dir))
+    values = list(results.values())
+    if len(results) > 1 and any(v != values[0] for v in values):
+        detail = "".join(f"      {n:<8} {sorted(r) or '(none)'}\n" for n, r in results.items())
+        only = set().union(*values) - set.intersection(*values)
+        failures.append(f"{case['name']}: ANALYZERS DISAGREE on {sorted(only)}\n{detail}")
+        return False, failures
+    return True, failures
 
 
 def run_analyzer_level(impls: list[Implementation]) -> tuple[int, int, list[str]]:
@@ -255,31 +271,11 @@ def run_analyzer_level(impls: list[Implementation]) -> tuple[int, int, list[str]
     cases = corpus["cases"]
     failures: list[str] = []
     passed = 0
-    rules_dir = SPEC_ROOT / "rules"
-
     with tempfile.TemporaryDirectory(prefix="agtmls-analyzer-") as raw:
-        tmp = Path(raw)
         for case in cases:
-            root = materialise(case, tmp / case["name"])
-            results: dict[str, set[str]] = {}
-            for impl in impls:
-                try:
-                    results[impl.name] = impl.audit(root, rules_dir)
-                except RuntimeError as exc:
-                    failures.append(str(exc))
-
-            if len(results) > 1:
-                values = list(results.values())
-                if any(v != values[0] for v in values):
-                    detail = "".join(
-                        f"      {n:<8} {sorted(r) or '(none)'}\n" for n, r in results.items()
-                    )
-                    only = set().union(*values) - set.intersection(*values)
-                    failures.append(
-                        f"{case['name']}: ANALYZERS DISAGREE on {sorted(only)}\n{detail}"
-                    )
-                    continue
-            passed += 1
+            ok, found = _analyzer_case(case, impls, Path(raw), SPEC_ROOT / "rules")
+            passed += ok
+            failures += found
     return passed, len(cases), failures
 
 
@@ -340,6 +336,32 @@ def second_agent_bundle(python: Implementation) -> str | None:
     return bundles[0] if bundles else None
 
 
+def _verify_agreement(impls: list[Implementation], fixture: Path, agent: str) -> tuple[dict, list[str]]:
+    """Each implementation's verify result for `agent`, and where they differ."""
+    results, failures = _ask(impls, lambda impl: impl.verify_install(fixture, agent))
+    failures = [f"{agent}: {f}" for f in failures]
+    if len(results) > 1:
+        codes = {name: code for name, (code, _) in results.items()}
+        if len(set(codes.values())) > 1:
+            failures.append(f"{agent}: exit codes disagree: {codes}")
+        problems = {name: problems for name, (_, problems) in results.items()}
+        values = list(problems.values())
+        if any(v != values[0] for v in values):
+            detail = "".join(f"      {n:<8} {sorted(v)}\n" for n, v in problems.items())
+            failures.append(f"{agent}: verify results disagree\n{detail}")
+    return results, failures
+
+
+def _leaks(results: dict, codex_only: set[str]) -> list[str]:
+    """Implementations reporting another agent's skills against claude."""
+    failures = []
+    for name, (_, found) in results.items():
+        leaked = sorted(skill for skill, _ in found if skill in codex_only)
+        if leaked:
+            failures.append(f"{name}: reports codex-only skill(s) against claude: {', '.join(leaked)}")
+    return failures
+
+
 def run_registry_level(impls: list[Implementation], fixture: Path) -> tuple[int, int, list[str]]:
     """L4. Implementations must agree about whether an install can be trusted.
 
@@ -359,34 +381,13 @@ def run_registry_level(impls: list[Implementation], fixture: Path) -> tuple[int,
     marker = fixture.parent / CODEX_ONLY
     codex_only = set(json.loads(marker.read_text(encoding="utf-8"))) if marker.exists() else set()
     for agent in agents:
-        total += 1
-        before = len(failures)
-        results: dict[str, tuple[int, set[tuple[str, str]]]] = {}
-        for impl in impls:
-            try:
-                results[impl.name] = impl.verify_install(fixture, agent)
-            except RuntimeError as exc:
-                failures.append(f"{agent}: {exc}")
-
-        if len(results) > 1:
-            codes = {name: code for name, (code, _) in results.items()}
-            if len(set(codes.values())) > 1:
-                failures.append(f"{agent}: exit codes disagree: {codes}")
-            problems = {name: problems for name, (_, problems) in results.items()}
-            values = list(problems.values())
-            if any(v != values[0] for v in values):
-                detail = "".join(f"      {n:<8} {sorted(v)}\n" for n, v in problems.items())
-                failures.append(f"{agent}: verify results disagree\n{detail}")
-        passed += len(failures) == before
-
+        results, found = _verify_agreement(impls, fixture, agent)
+        checks = [found]
         if agent == "claude" and codex_only:
-            total += 1
-            before = len(failures)
-            for name, (_, found) in results.items():
-                leaked = sorted(skill for skill, _ in found if skill in codex_only)
-                if leaked:
-                    failures.append(f"{name}: reports codex-only skill(s) against claude: {', '.join(leaked)}")
-            passed += len(failures) == before
+            checks.append(_leaks(results, codex_only))
+        total += len(checks)
+        passed += sum(not check for check in checks)
+        failures += [f for check in checks for f in check]
     return passed, total, failures
 
 
@@ -407,58 +408,49 @@ SIGNATURE_EXIT = {"verified": 0, "bad_signature": 5, "unsigned": 4}
 ADVISORY_EXIT = {"clean": 0, "revoked": 6, "bad_signature": 5, "unsigned": 4}
 
 
-def run_trust_level(impls: list[Implementation]) -> tuple[int, int, list[str]]:
-    """L5. Chapters 9, 10 and 11, against their vectors and each other.
+def _judged(label: str, results: dict, errors: list[str], expected: object, impls: list) -> tuple[int, list[str]]:
+    """(1 if every implementation answered as expected, failures)."""
+    found = _agree(label, results, expected)
+    return int(not found and len(results) == len(impls)), errors + found
 
-    Signatures and advisories are judged at each vector's fixed verification
-    time, on exit code and status together; attestations are compared byte
-    for byte, since their rendering is canonical.
-    """
-    failures: list[str] = []
-    passed = total = 0
-    corpus = SPEC_ROOT / "corpus"
 
+def _signature_cases(impls: list[Implementation], corpus: Path) -> tuple[int, int, list[str]]:
     sig_dir = corpus / "signatures"
     sigs = json.loads((sig_dir / "cases.json").read_text(encoding="utf-8"))
+    passed, failures = 0, []
     for case in sigs["cases"]:
-        total += 1
         sig = sig_dir / (case["signature"] or "absent.sig")
-        results: dict[str, object] = {}
-        for impl in impls:
-            try:
-                results[impl.name] = impl.signature(
-                    sig_dir / case["index"], sig, sig_dir / sigs["allowed_signers"],
-                    sigs["namespace"], case["verify_time"])
-            except RuntimeError as exc:
-                failures.append(str(exc))
-        found = _agree(f"signatures/{case['name']}", results,
-                       (SIGNATURE_EXIT[case["expected"]], case["expected"]))
-        failures += found
-        passed += not found and len(results) == len(impls)
+        results, errors = _ask(impls, lambda impl, case=case, sig=sig: impl.signature(
+            sig_dir / case["index"], sig, sig_dir / sigs["allowed_signers"], sigs["namespace"], case["verify_time"]))
+        ok, found = _judged(f"signatures/{case['name']}", results, errors,
+                            (SIGNATURE_EXIT[case["expected"]], case["expected"]), impls)
+        passed, failures = passed + ok, failures + found
+    return passed, len(sigs["cases"]), failures
 
+
+def _advisory_verdict(impl: Implementation, args: tuple) -> tuple:
+    code, status, ids = impl.advisories(*args)
+    return code, ("revoked" if ids else "clean") if status == "verified" else status, ids
+
+
+def _advisory_cases(impls: list[Implementation], corpus: Path) -> tuple[int, int, list[str]]:
     adv_dir = corpus / "advisories"
     advs = json.loads((adv_dir / "cases.json").read_text(encoding="utf-8"))
+    passed, failures = 0, []
     with tempfile.TemporaryDirectory(prefix="agtmls-l5-") as raw:
         for case in advs["cases"]:
-            total += 1
             lock = Path(raw) / f"{case['name']}.json"
             lock.write_text(json.dumps(case["lockfile"]), encoding="utf-8")
-            sig = adv_dir / (case["signature"] or "absent.sig")
-            results = {}
-            for impl in impls:
-                try:
-                    code, status, ids = impl.advisories(
-                        adv_dir / advs["feed"], sig, adv_dir / advs["allowed_signers"], lock,
-                        advs["verify_time"])
-                    verdict = ("revoked" if ids else "clean") if status == "verified" else status
-                    results[impl.name] = (code, verdict, ids)
-                except RuntimeError as exc:
-                    failures.append(str(exc))
+            args = (adv_dir / advs["feed"], adv_dir / (case["signature"] or "absent.sig"),
+                    adv_dir / advs["allowed_signers"], lock, advs["verify_time"])
+            results, errors = _ask(impls, lambda impl, args=args: _advisory_verdict(impl, args))
             expected = (ADVISORY_EXIT[case["expected"]], case["expected"], case["advisories"])
-            found = _agree(f"advisories/{case['name']}", results, expected)
-            failures += found
-            passed += not found and len(results) == len(impls)
+            ok, found = _judged(f"advisories/{case['name']}", results, errors, expected, impls)
+            passed, failures = passed + ok, failures + found
+    return passed, len(advs["cases"]), failures
 
+
+def _attestation_cases(impls: list[Implementation], corpus: Path) -> tuple[int, int, list[str]]:
     att_dir = corpus / "attestations"
     inputs = json.loads((att_dir / "inputs.json").read_text(encoding="utf-8"))
     digest_cases = {c["name"]: c for c in json.loads(
@@ -466,24 +458,31 @@ def run_trust_level(impls: list[Implementation]) -> tuple[int, int, list[str]]:
     runs = [("manifest", m["vector"], digest_cases[m["digest_case"]], m["skill"], None)
             for m in inputs["manifests"]]
     runs += [("capabilities", c["vector"], c, c["skill"], c["digest"]) for c in inputs["capabilities"]]
+    passed, failures = 0, []
     with tempfile.TemporaryDirectory(prefix="agtmls-l5-attest-") as raw:
         for kind, vector, case, name, digest in runs:
-            total += 1
             skill = materialise(case, Path(raw) / vector)
-            results = {}
-            for impl in impls:
-                try:
-                    results[impl.name] = impl.attest(kind, skill, name, digest, SPEC_ROOT / "rules")
-                except RuntimeError as exc:
-                    failures.append(str(exc))
+            results, errors = _ask(impls, lambda impl, kind=kind, skill=skill, name=name, digest=digest:
+                                   impl.attest(kind, skill, name, digest, SPEC_ROOT / "rules"))
             want = (att_dir / vector).read_text(encoding="utf-8")
-            found = _agree(f"attestations/{vector}", results, want)
-            failures += found
-            passed += not found and len(results) == len(impls)
-    return passed, total, failures
+            ok, found = _judged(f"attestations/{vector}", results, errors, want, impls)
+            passed, failures = passed + ok, failures + found
+    return passed, len(runs), failures
 
 
-def main() -> int:
+def run_trust_level(impls: list[Implementation]) -> tuple[int, int, list[str]]:
+    """L5. Chapters 9, 10 and 11, against their vectors and each other.
+
+    Signatures and advisories are judged at each vector's fixed verification
+    time, on exit code and status together; attestations are compared byte
+    for byte, since their rendering is canonical.
+    """
+    corpus = SPEC_ROOT / "corpus"
+    parts = [part(impls, corpus) for part in (_signature_cases, _advisory_cases, _attestation_cases)]
+    return sum(p[0] for p in parts), sum(p[1] for p in parts), [f for p in parts for f in p[2]]
+
+
+def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", maxsplit=1)[0])
     parser.add_argument("--python", type=Path, help="path to an agtmls checkout")
     parser.add_argument("--rust", type=Path, help="path to an agtmls-rs binary")
@@ -492,96 +491,90 @@ def main() -> int:
         "--install-fixture", type=Path,
         help="an installed tree with a lockfile, for the L4 differential",
     )
-    args = parser.parse_args()
+    return parser
 
-    impls: list[Implementation] = []
-    if args.python:
-        impls.append(Implementation("python", "python", args.python.resolve()))
-    if args.rust:
-        impls.append(Implementation("rust", "rust", args.rust.resolve()))
+
+def _level(passed: int, total: int, failures: list[str]) -> dict[str, object]:
+    return {"passed": passed, "total": total, "failures": failures}
+
+
+def _registry(impls: list[Implementation], install_fixture: Path | None) -> dict[str, object] | None:
+    """L4, when there is more than one implementation and a fixture to judge."""
+    python_impl = next((i for i in impls if i.kind == "python"), None)
+    if len(impls) < 2 or not (install_fixture or python_impl):
+        return None
+    with tempfile.TemporaryDirectory(prefix="agtmls-l4-") as raw:
+        fixture = install_fixture.resolve() if install_fixture else build_install_fixture(python_impl, Path(raw))
+        if fixture is None:
+            return _level(0, 0, ["could not build an install fixture"])
+        return _level(*run_registry_level(impls, fixture))
+
+
+def _levels(impls: list[Implementation], install_fixture: Path | None) -> dict[str, dict[str, object]]:
+    """Every level that applies, in the order the report lists them."""
+    checked, _, rules_failures = run_rules_level()
+    levels: dict[str, dict[str, object]] = {"rules": {"checked": checked, "failures": rules_failures}}
+    levels["L2-verifier"] = _level(*run_digest_level(impls))
+    if len(impls) > 1:
+        levels["L3-analyzer"] = _level(*run_analyzer_level(impls))
+    registry = _registry(impls, install_fixture)
+    if registry is not None:
+        levels["L4-registry"] = registry
+    levels["L5-trust"] = _level(*run_trust_level(impls))
+    return levels
+
+
+# (level, label, noun, printed even when it checked nothing), in the text
+# report's order.
+TEXT_LINES = [
+    ("L2-verifier", "L2 verifier", "digest vector(s)", True),
+    ("L4-registry", "L4 registry", "lockfile verification agrees", False),
+    ("L3-analyzer", "L3 analyzer", "security case(s) agree", False),
+    ("L5-trust", "L5 trust", "signature, advisory and attestation vector(s)", True),
+]
+
+
+def _print_failures(failures: list[str]) -> None:
+    for failure in failures:
+        print(f"    FAIL {failure}")
+
+
+def _print_text(impls: list[Implementation], levels: dict, failed: bool) -> None:
+    print(f"Implementations under test: {', '.join(i.name for i in impls)}")
+    print()
+    rules = levels["rules"]
+    suffix = f" -- {len(rules['failures'])} FAILED" if rules["failures"] else ""
+    print(f"  rules self-test   {rules['checked']} example(s) checked{suffix}")
+    _print_failures(rules["failures"])
+    for key, label, noun, always in TEXT_LINES:
+        level = levels.get(key)
+        if level is None or not (always or level["total"]):
+            continue
+        print(f"  {label:<18}{level['passed']}/{level['total']} {noun}")
+        _print_failures(level["failures"])
+    print()
+    if failed:
+        print("FAIL: conformance failed")
+    elif len(impls) > 1:
+        print(f"OK: {len(impls)} implementations conform and agree with each other")
+    else:
+        print(f"OK: {impls[0].name} conforms")
+
+
+def main() -> int:
+    parser = _parser()
+    args = parser.parse_args()
+    kinds = [("python", args.python), ("rust", args.rust)]
+    impls = [Implementation(kind, kind, path.resolve()) for kind, path in kinds if path]
     if not impls:
         parser.print_help(sys.stderr)
         return 2
-
-    report: dict[str, object] = {"implementations": [i.name for i in impls], "levels": {}}
-    failed = False
-
-    rules_passed, rules_total, rules_failures = run_rules_level()
-    report["levels"]["rules"] = {
-        "checked": rules_passed, "failures": rules_failures,
-    }
-    failed |= bool(rules_failures)
-
-    digest_passed, digest_total, digest_failures = run_digest_level(impls)
-    report["levels"]["L2-verifier"] = {
-        "passed": digest_passed, "total": digest_total, "failures": digest_failures,
-    }
-    failed |= bool(digest_failures)
-
-    analyzer_passed, analyzer_total, analyzer_failures = (0, 0, [])
-    if len(impls) > 1:
-        analyzer_passed, analyzer_total, analyzer_failures = run_analyzer_level(impls)
-        report["levels"]["L3-analyzer"] = {
-            "passed": analyzer_passed, "total": analyzer_total, "failures": analyzer_failures,
-        }
-        failed |= bool(analyzer_failures)
-
-    registry_passed, registry_total, registry_failures = (0, 0, [])
-    python_impl = next((i for i in impls if i.kind == "python"), None)
-    if len(impls) > 1 and (args.install_fixture or python_impl):
-        with tempfile.TemporaryDirectory(prefix="agtmls-l4-") as raw:
-            fixture = args.install_fixture.resolve() if args.install_fixture else None
-            if fixture is None and python_impl is not None:
-                fixture = build_install_fixture(python_impl, Path(raw))
-            if fixture is None:
-                registry_failures = ["could not build an install fixture"]
-            else:
-                registry_passed, registry_total, registry_failures = run_registry_level(
-                    impls, fixture
-                )
-        report["levels"]["L4-registry"] = {
-            "passed": registry_passed, "total": registry_total, "failures": registry_failures,
-        }
-        failed |= bool(registry_failures)
-
-    trust_passed, trust_total, trust_failures = run_trust_level(impls)
-    report["levels"]["L5-trust"] = {
-        "passed": trust_passed, "total": trust_total, "failures": trust_failures,
-    }
-    failed |= bool(trust_failures)
-
+    levels = _levels(impls, args.install_fixture)
+    failed = any(level["failures"] for level in levels.values())
     if args.json:
-        print(json.dumps(report, indent=2))
+        print(json.dumps({"implementations": [i.name for i in impls], "levels": levels}, indent=2))
     else:
-        names = ", ".join(i.name for i in impls)
-        print(f"Implementations under test: {names}")
-        print()
-        print(f"  rules self-test   {rules_passed} example(s) checked"
-              f"{'' if not rules_failures else f' -- {len(rules_failures)} FAILED'}")
-        for failure in rules_failures:
-            print(f"    FAIL {failure}")
-        print(f"  L2 verifier       {digest_passed}/{digest_total} digest vector(s)")
-        for failure in digest_failures:
-            print(f"    FAIL {failure}")
-        if registry_total:
-            print(f"  L4 registry       {registry_passed}/{registry_total} lockfile verification agrees")
-            for failure in registry_failures:
-                print(f"    FAIL {failure}")
-        if analyzer_total:
-            print(f"  L3 analyzer       {analyzer_passed}/{analyzer_total} security case(s) agree")
-            for failure in analyzer_failures:
-                print(f"    FAIL {failure}")
-        print(f"  L5 trust          {trust_passed}/{trust_total} signature, advisory and attestation vector(s)")
-        for failure in trust_failures:
-            print(f"    FAIL {failure}")
-        print()
-        if failed:
-            print("FAIL: conformance failed")
-        elif len(impls) > 1:
-            print(f"OK: {len(impls)} implementations conform and agree with each other")
-        else:
-            print(f"OK: {impls[0].name} conforms")
-
+        _print_text(impls, levels, failed)
     return 1 if failed else 0
 
 
