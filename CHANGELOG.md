@@ -9,6 +9,13 @@ including after withdrawal.
 
 ## Unreleased
 
+### Added
+
+- §10.9, a draft `https://agtmls.dev/efficacy/v1` attestation: a skill's
+  measured gain on several agents and its token cost, bound to the exact
+  skill digest the measurement recorded. It has no conformance level until
+  a second implementation reproduces it from the same results file.
+
 ### Changed (conformance tooling)
 
 - The conformance scripts meet the portfolio's complexity ceilings
