@@ -4,7 +4,7 @@
 # 10. Attestations
 
 **Status:** normative, except §10.6, which is reserved until an analyzer
-emits it. **Conformance:** L5: both reference implementations reproduce
+emits it, and §10.9, which is a draft with one implementation. **Conformance:** L5: both reference implementations reproduce
 every vector in [`corpus/attestations/`](../corpus/attestations/) byte for
 byte, and `conformance/run.py` compares them with each other.
 
@@ -105,3 +105,44 @@ the inputs for each vector: a manifest vector names a
 manifest; a capabilities vector carries its `SKILL.md` and `metadata.json`.
 `conformance/validate-attestations.py` rebuilds every vector from its inputs
 and fails unless the committed file matches byte for byte.
+
+## 10.9 Efficacy — `https://agtmls.dev/efficacy/v1` (draft)
+
+A skill is only worth its place if it changes what an agent does. An
+efficacy attestation records a measurement of that: the same tasks run with
+and without the skill, on each of several agents, graded the same way.
+
+```json
+"predicate": {
+  "bar": {"agents": 2, "token_ceiling": 1.5, "big_gain": 0.2},
+  "evidence": {"path": "<results file>", "digest": {"sha256": "<hex>"},
+               "commit": "<40 hex>", "date": "<RFC 3339>", "trials": 5},
+  "agents": [{"agent": "claude", "model": "<model>", "score_without": 0.8,
+              "score_with": 1.0, "delta": 0.2, "token_ratio": 1.32,
+              "verdict": "helps"}],
+  "meets_bar": true
+}
+```
+
+- The subject is the skill digest (§10.3) that the measurement recorded. An
+  implementation MUST NOT emit the attestation for any other digest: a
+  measurement never vouches for bytes it did not measure.
+- `agents` is sorted by `agent`. `score_without` and `score_with` are the
+  mean share of planted flaws found in each arm; `delta` is their
+  difference; `token_ratio` is mean tokens with the skill over mean tokens
+  without, to two decimals, or null when an agent reports none.
+- `verdict` is `helps` when `delta` is positive and `token_ratio` is at most
+  `bar.token_ceiling`, or `delta` is at least `bar.big_gain`; `too costly`
+  when it gains less than that above the ceiling; `no gain` when `delta` is
+  not positive; `no data` or `no token data` when a figure is missing.
+- `meets_bar` is true when at least `bar.agents` agents have the verdict
+  `helps`.
+- `evidence` names the results file the figures come from and its SHA-256,
+  so a reader can recompute every figure.
+
+It is rendered (§10.2) and signed (§10.7) as the other attestations are.
+It has no vectors and no conformance level yet: the figures come from
+running agents, which this repository does not do, and agtmls
+(`scripts/_lib/efficacy.py`) is its only implementation. It becomes
+normative when a second implementation reproduces it from the same results
+file.
