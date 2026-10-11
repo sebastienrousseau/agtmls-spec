@@ -7,7 +7,7 @@ This specification versions independently of any implementation, and
 deliberately more slowly. Rule identifiers are permanent and are never reused,
 including after withdrawal.
 
-## Unreleased
+## [0.0.2] - 2026-10-11
 
 ### Added
 

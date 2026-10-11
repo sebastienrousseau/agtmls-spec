@@ -9,4 +9,4 @@ authors:
 repository-code: "https://github.com/sebastienrousseau/agtmls-spec"
 abstract: "The normative specification for AgtMLS agent skills and its conformance corpus."
 license: "Apache-2.0 OR MIT"
-version: 0.0.1
+version: 0.0.2
