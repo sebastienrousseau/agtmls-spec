@@ -72,6 +72,22 @@ jobs:
       - run: ./conformance/validate-advisories.py
       - run: python3 -m unittest discover -s tests
 
+  corpus-integrity-all:
+    # Branch protection requires this check by name. It stands for every
+    # leg of the corpus-integrity matrix, so adding or dropping a version never
+    # renames a required check.
+    name: corpus is well-formed (all)
+    if: always()
+    needs: corpus-integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Every leg of the matrix passed
+        env:
+          RESULT: ${{ needs.corpus-integrity.result }}
+        run: test "$RESULT" = success
+
   signatures:
     name: commits are signed
     runs-on: ubuntu-latest
