@@ -7,7 +7,8 @@
 **Schema:** [`schema/lockfile.schema.json`](../schema/lockfile.schema.json).
 **Conformance:** L4, exercised by `conformance/run.py`, which builds an
 install, tampers with it, and requires every implementation to agree about
-what is wrong with it.
+what is wrong with it, and to exit `3` for a lockfile whose entry points
+outside the skills directory.
 
 ## 6.1 Purpose
 
@@ -45,6 +46,21 @@ directory (`.claude/skills/`, `.codex/skills/`, ...). `executable_files`
 records the mode bits that [`03-integrity.md`](03-integrity.md) deliberately
 excludes from the digest, so a lost executable bit can be repaired without
 being mistaken for tampering.
+
+### Entry names and paths
+
+The lockfile is written into the target repository, so whoever controls that
+repository controls the lockfile. `name` and `path` MUST each be a single
+directory name: not empty, not `.` or `..`, and containing no `/`, `\`, `:`
+or NUL. An implementation MUST treat a lockfile with any other `name` or
+`path` as unreadable (6.5, exit `3`), and MUST NOT read, digest or remove
+anything on that entry's account.
+
+Joined unchecked onto the skills directory, `../<dir>` reaches a sibling of
+it, an absolute path replaces it outright in most path libraries, and `C:x`
+names another drive on Windows. An entry carrying the digest of the directory
+it names then verifies clean, and an uninstall that removes recorded copies
+deletes it.
 
 ### One lockfile, several agents
 
@@ -100,7 +116,7 @@ error:
 | `0` | Every recorded skill matches. Unmanaged skills may be present. |
 | `1` | An error unrelated to integrity. |
 | `2` | Usage error. |
-| `3` | `INTEGRITY_FAILURE`: a recorded skill is modified or missing, or the lockfile is unreadable. |
+| `3` | `INTEGRITY_FAILURE`: a recorded skill is modified or missing, or the lockfile is unreadable (including an entry whose `name` or `path` is not a single directory name, 6.2). |
 
 Collapsing this into `0`/`1` makes "the tool broke" and "your install has been
 altered" indistinguishable to a calling script, which is the one distinction

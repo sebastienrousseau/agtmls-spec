@@ -2,6 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/sebastienrousseau/agtmls-spec/schema/lockfile.schema.json",
   "title": "AgtMLS install lockfile (.agtmls/manifest.json)",
+  "$defs": {
+    "single_name": {
+      "type": "string",
+      "pattern": "^[^/\\\\:\\u0000]+$",
+      "not": { "enum": [".", ".."] },
+      "description": "One directory name (spec 6.2): never a path that could leave the agent's skills directory."
+    }
+  },
   "type": "object",
   "required": ["schema_version", "spec_version", "installed_at", "source", "mode", "skills"],
   "properties": {
@@ -23,9 +31,9 @@
         "type": "object",
         "required": ["name", "integrity", "path"],
         "properties": {
-          "name": { "type": "string" },
+          "name": { "$ref": "#/$defs/single_name" },
           "integrity": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
-          "path": { "type": "string" },
+          "path": { "$ref": "#/$defs/single_name" },
           "executable_files": {
             "type": "array",
             "items": { "type": "string" },

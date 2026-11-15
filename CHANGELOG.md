@@ -7,6 +7,29 @@ This specification versions independently of any implementation, and
 deliberately more slowly. Rule identifiers are permanent and are never reused,
 including after withdrawal.
 
+## [0.0.3] - Unreleased
+
+### Added
+
+- §6.2 "Entry names and paths": a lockfile entry's `name` and `path` MUST
+  each be a single directory name (not empty, `.` or `..`, and no `/`, `\`,
+  `:` or NUL), and a lockfile with any other is unreadable: exit `3` (§6.5).
+  The lockfile is written into the target repository, and both
+  implementations joined `path` onto the skills directory unchecked, so an
+  entry of `../../<dir>` carrying that directory's digest verified clean.
+  `schema/lockfile.schema.json` constrains both fields to match.
+- L4 checks it absolutely: `conformance/run.py` builds a clean install
+  whose only entry points at a real skill outside the skills directory, and
+  requires exit `3` from every implementation (agtmls 0.0.28, agtmls-core
+  0.0.4). Both previous mains exit `0` on it.
+
+### Changed
+
+- `KEYS.asc` trusts a second maintainer signing key,
+  `SHA256:kIOPAavp1TCEauTr1tTIN3cv+tSs6F9m/4lZjuM9tqk`, so release tags can
+  be signed on either maintainer machine. Each key line now carries its
+  fingerprint for out-of-band checks.
+
 ## [0.0.2] - 2026-10-11
 
 ### Added
