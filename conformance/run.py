@@ -33,6 +33,9 @@ import tempfile
 from pathlib import Path
 
 SPEC_ROOT = Path(__file__).resolve().parent.parent
+# The runner's own directory, for the cases kept beside it.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from lockfile_cases import escaping_lockfile_case
 
 
 class Implementation:
@@ -43,14 +46,22 @@ class Implementation:
         self.kind = kind
         self.location = location
 
-    def verify_install(self, target: Path, agent: str) -> tuple[int, set[tuple[str, str]]]:
-        """(exit code, {(skill, status)}) for an installed tree."""
+    def _verify(self, target: Path, agent: str) -> subprocess.CompletedProcess:
         if self.kind == "python":
             argv = [sys.executable, str(self.location / "scripts" / "agtmls.py"),
                     "verify", agent, "--target", str(target), "--json"]
         else:
             argv = [str(self.location), "verify", str(target), "--agent", agent, "--json"]
-        proc = subprocess.run(argv, capture_output=True, text=True, check=False)
+        return subprocess.run(argv, capture_output=True, text=True, check=False)
+
+    def verify_exit(self, target: Path, agent: str) -> int:
+        """Only the exit code: a lockfile that cannot be read need not come
+        with a report (6.5)."""
+        return self._verify(target, agent).returncode
+
+    def verify_install(self, target: Path, agent: str) -> tuple[int, set[tuple[str, str]]]:
+        """(exit code, {(skill, status)}) for an installed tree."""
+        proc = self._verify(target, agent)
         try:
             payload = json.loads(proc.stdout)
         except json.JSONDecodeError as exc:
@@ -388,7 +399,8 @@ def run_registry_level(impls: list[Implementation], fixture: Path) -> tuple[int,
         total += len(checks)
         passed += sum(not check for check in checks)
         failures += [f for check in checks for f in check]
-    return passed, total, failures
+    escaping = escaping_lockfile_case(impls, fixture)
+    return passed + (not escaping), total + 1, failures + escaping
 
 
 def _agree(label: str, results: dict[str, object], expected: object) -> list[str]:
