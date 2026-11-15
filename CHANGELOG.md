@@ -7,7 +7,7 @@ This specification versions independently of any implementation, and
 deliberately more slowly. Rule identifiers are permanent and are never reused,
 including after withdrawal.
 
-## [0.0.3] - Unreleased
+## [0.0.3] - 2026-11-15
 
 ### Added
 
@@ -22,6 +22,14 @@ including after withdrawal.
   whose only entry points at a real skill outside the skills directory, and
   requires exit `3` from every implementation (agtmls 0.0.28, agtmls-core
   0.0.4). Both previous mains exit `0` on it.
+
+### Fixed (release tooling)
+
+- `release.yml` checks the tag against the release version in
+  `CITATION.cff`. It compared it with `spec_version` in
+  `spec/07-conformance.md`, the format version a lockfile declares (0.1.0),
+  so every `v0.0.x` tag failed and v0.0.2 never got a release. The release
+  title is `agtmls-spec 0.0.3`, without the `v`.
 
 ### Changed
 

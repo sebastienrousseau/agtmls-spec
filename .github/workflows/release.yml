@@ -47,12 +47,16 @@ jobs:
           cargo build --release -p agtmls-cli --manifest-path .agtmls-core/Cargo.toml
           ./conformance/run.py --python .agtmls --rust .agtmls-core/target/release/agtmls-rs
 
-      - name: Tag must match the spec version
+      # The tag names the repository release (CITATION.cff), not the format
+      # version a lockfile declares (spec_version in 07-conformance.md, 0.1.0):
+      # comparing against that refused every v0.0.x tag, so v0.0.2 never got
+      # a release.
+      - name: Tag must match the release version
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
-          DECLARED=$(grep -oE 'spec_version[^0-9]*([0-9]+\.[0-9]+\.[0-9]+)' spec/07-conformance.md | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          DECLARED=$(sed -n 's/^version: *//p' CITATION.cff)
           test "v${DECLARED}" = "${GITHUB_REF_NAME}" || {
-            echo "::error::tag ${GITHUB_REF_NAME} does not match the declared spec version ${DECLARED}"
+            echo "::error::tag ${GITHUB_REF_NAME} does not match the release version ${DECLARED} in CITATION.cff"
             exit 1
           }
 
@@ -60,4 +64,5 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v') && inputs.dry_run != true
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${GITHUB_REF_NAME}" --title "agtmls-spec ${GITHUB_REF_NAME}" --generate-notes
+        # The title is `<project> <version>`, without the v (the release page format).
+        run: gh release create "${GITHUB_REF_NAME}" --title "agtmls-spec ${GITHUB_REF_NAME#v}" --generate-notes
