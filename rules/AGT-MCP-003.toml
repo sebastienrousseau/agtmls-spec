@@ -1,0 +1,45 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-MCP-003"
+category = "supply_chain"
+severity = "medium"
+title = "Remote MCP server over plain HTTP or with no URL"
+scope = "normalised"
+applies_to = ["*.json", "*.jsonc"]
+
+description = '''A remote MCP server configured with an `http://` URL to a named host, or with an empty URL'''
+rationale = '''Tool definitions and tool results from a remote MCP server reach the model as trusted text. Over plain HTTP anyone on the path can rewrite them, and an empty URL is filled in later by whoever controls the environment. Loopback addresses (localhost, 127.0.0.1) are not flagged: that traffic does not leave the machine. Limit: the URL must follow an `mcpServers` or `mcp` key in the same file.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)"(?:mcpServers|mcp)"\s*:\s*\{[\s\S]*?"(?:url|serverUrl)"\s*:\s*"(?:http://[^"\s/:@]*\.[a-z][a-z0-9-]*(?:[:/][^"]*)?)?"'''
+
+[[true_positive]]
+text = '''"mcpServers": {"docs": {"type": "http", "url": "http://mcp.example.com/mcp"}}'''
+
+[[true_positive]]
+text = '''"mcpServers": {"x": {"type": "sse", "url": ""}}'''
+
+[[true_positive]]
+text = '''"mcp": {"web": {"type": "remote", "url": "http://tools.example.org/sse"}}'''
+
+[[false_positive]]
+text = '''"mcpServers": {"docs": {"url": "https://mcp.example.com/mcp"}}'''
+note = "HTTPS."
+
+[[false_positive]]
+text = '''"mcpServers": {"local": {"url": "http://localhost:3000/mcp"}}'''
+note = "Loopback traffic stays on the machine."
+
+[[false_positive]]
+text = '''"mcpServers": {"local": {"url": "http://127.0.0.1:8080/sse"}}'''
+note = "Loopback traffic stays on the machine."
+
+[[false_positive]]
+text = '''"repository": {"url": "http://git.example.com/x"}'''
+note = "Not an MCP server."

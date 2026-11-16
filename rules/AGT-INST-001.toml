@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-INST-001"
+category = "unsafe_execution"
+severity = "medium"
+title = "Recursive delete inside the user's agent configuration"
+scope = "normalised"
+applies_to = ["*.md", "*.sh", "*.bash", "*.zsh", "*.ps1", "*.py", "*.js", "*.mjs", "*.cjs", "*.ts", "*.json", "*.yaml", "*.yml", "*.toml", "executable"]
+
+description = '''`rm -rf` on a path under the user's own agent directories (~/.claude, ~/.codex, ~/.gemini, ~/.cursor, ~/.agents), or on a variable's path that is then replaced with a symlink'''
+rationale = '''An installer that clears its target with rm -rf before linking deletes whatever was there, including a skill or setting the user wrote by hand under the same name. Seen in a published link script. Refuse a target the installer did not create, or move it aside, instead.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)\brm\s+-[a-z]*(?:rf|fr)[a-z]*\s+["']?(?:~|\$HOME\b|\$\{HOME\})/\.(?:claude|codex|gemini|cursor|agents)\b|\brm\s+-[a-z]*(?:rf|fr)[a-z]*\s+["']?\$\{?\w+\}?["']?[\s;][\s\S]{0,200}?\bln\s+-[a-z]*s'''
+
+[[true_positive]]
+text = '''rm -rf "$HOME/.claude/skills/$name"'''
+
+[[true_positive]]
+text = '''rm -rf ~/.codex/skills'''
+
+[[true_positive]]
+text = '''rm -Rf ${HOME}/.agents/skills/review'''
+
+[[true_positive]]
+text = '''if [ -e "$target" ]; then rm -rf "$target"; fi
+    ln -sfn "$src" "$target"'''
+
+[[false_positive]]
+text = '''rm -rf ./build'''
+note = "Inside the repository."
+
+[[false_positive]]
+text = '''rm -f ~/.claude/skills/review/.DS_Store'''
+note = "Not recursive."
+
+[[false_positive]]
+text = '''ls ~/.claude/skills'''
+note = "Deletes nothing."
+
+[[false_positive]]
+text = '''rm -rf "$BUILD_DIR"
+mkdir -p "$BUILD_DIR"'''
+note = "Clears a build directory; links nothing into it."

@@ -1,0 +1,48 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-MCP-004"
+category = "unsafe_execution"
+severity = "medium"
+title = "MCP server that evaluates inline code or loads it from above the repository"
+scope = "normalised"
+applies_to = ["*.json", "*.jsonc"]
+
+description = '''An MCP server started as `node -e`, `bun --eval`, `python -c` and the like, or from a path that climbs two or more directories out of the repository'''
+rationale = '''An MCP server runs with the agent's rights at every session. Inline code in the config is never reviewed as code, and a path such as ../../shared/server.js loads whatever sits beside the checkout on the user's disk, which the repository's review never saw. Seen in a published harness whose config walks parent directories to find its server. Run a file that ships in the repository instead.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)"command"\s*:\s*"(?:node|nodejs|bun|deno|python3?|ruby|perl)"\s*,\s*"args"\s*:\s*\[\s*(?:"-[-\w=]+"\s*,\s*)*"(?:-e|--eval|-c|-p|--print|eval)"|"command"\s*:\s*\[\s*"(?:node|nodejs|bun|deno|python3?|ruby|perl)"\s*,\s*(?:"-[-\w=]+"\s*,\s*)*"(?:-e|--eval|-c|-p|--print|eval)"|"command"\s*:\s*"[^"]*"\s*,\s*"args"\s*:\s*\[[^\]]*"(?:\.\./){2,}|"command"\s*:\s*\[?\s*"(?:\.\./){2,}'''
+
+[[true_positive]]
+text = '''"command": "node", "args": ["-e", "require(process.env.SERVER)"]'''
+
+[[true_positive]]
+text = '''"command": "node", "args": ["../../tools/server.js"]'''
+
+[[true_positive]]
+text = '''"command": ["bun", "--eval", "await import(process.env.SERVER)"]'''
+
+[[true_positive]]
+text = '''"command": ["node", "--input-type=module", "-e", "let dir = process.cwd(); await import(find(dir))"]'''
+
+[[false_positive]]
+text = '''"command": "node", "args": ["./server.js"]'''
+note = "A file in the repository."
+
+[[false_positive]]
+text = '''"command": ["node", "--experimental-strip-types", "./server.ts"]'''
+note = "Flags before a file in the repository."
+
+[[false_positive]]
+text = '''"command": "python3", "args": ["-m", "mcp_server"]'''
+note = "An installed module, not inline code."
+
+[[false_positive]]
+text = '''"command": "node", "args": ["../server.js"]'''
+note = "One level up is still inside a monorepo package layout."

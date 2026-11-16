@@ -35,6 +35,12 @@ agree about `\s`, case folding and greediness. They do not, reliably — see 4.6
 | `PACK` | Encoded payloads decoded into an interpreter | CRITICAL |
 | `SOCIAL` | Prose that walks a person past review | HIGH |
 | `SEL` | Descriptions that game skill selection | MEDIUM |
+| `PERM` | Approval prompts switched off or pre-answered | HIGH |
+| `PERSIST` | Content that schedules itself to run again | HIGH |
+| `INST` | Installers that destroy what sits at their target | MEDIUM |
+| `RENDER` | Instructions in text a rendered page hides | MEDIUM |
+| `SUPPRESS` | Markers that silence another scanner | MEDIUM |
+| `ATTR` | Instructions to remove AI attribution | LOW |
 
 Identifiers are permanent. A withdrawn rule MUST be marked `withdrawn = true`
 and its identifier MUST NOT be reused.
@@ -137,7 +143,7 @@ MUST NOT fail by default, and MUST fail under a strict flag.
 ## 4.8 Structural rules
 
 Rules whose logic is not a pattern (`AGT-STEG-001`, `AGT-CAP-001`,
-`AGT-POLICY-*`, `AGT-SCAN-001`) MUST still be declared in `rules/` with
+`AGT-POLICY-*`, `AGT-SCAN-001`, `AGT-SCAN-002`) MUST still be declared in `rules/` with
 `kind = "structural"`, so the rule set can be enumerated from data alone
 without reading any implementation's source.
 

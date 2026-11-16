@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-HOOK-007"
+category = "hook_safety"
+severity = "high"
+title = "Writes into user-level agent configuration"
+scope = "normalised"
+applies_to = ["*.md", "*.sh", "*.bash", "*.zsh", "*.ps1", "*.py", "*.js", "*.mjs", "*.cjs", "*.ts", "*.json", "*.yaml", "*.yml", "*.toml", "executable"]
+
+description = '''A command that writes, copies or links into the user's own agent settings or instruction files (~/.claude/settings.json, ~/.claude/CLAUDE.md, ~/.codex/config.toml and their kind)'''
+rationale = '''User-level settings and instruction files steer every session in every repository, not the one the plugin came with. A hook or installer that appends to them changes the agent everywhere, past the repository's review, and it survives uninstalling the plugin. Seen in a published harness whose hooks write user-level agent configuration. Installing skills into ~/.claude/skills is not this rule: a skill is read on demand, settings and instruction files on every session.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)(?:>>?|\btee\s+(?:-a\s+)?|\b(?:cp|mv|ln|install)\s+[^|;&]*?\s)\s*["']?(?:~|\$HOME\b|\$\{HOME\}|%USERPROFILE%)/\.(?:claude|codex|gemini|cursor|config/opencode)/(?:settings[\w.-]*\.json|CLAUDE\.md|AGENTS\.md|GEMINI\.md|config\.toml|hooks\b|opencode\.json)'''
+
+[[true_positive]]
+text = '''echo "$HOOK" >> ~/.claude/settings.json'''
+
+[[true_positive]]
+text = '''cp CLAUDE.md "$HOME/.claude/CLAUDE.md"'''
+
+[[true_positive]]
+text = '''printf '[mcp_servers.x]' | tee -a ~/.codex/config.toml'''
+
+[[false_positive]]
+text = '''cp -r skills/review ~/.claude/skills/'''
+note = "Skills are read on demand; this rule is about settings and instruction files."
+
+[[false_positive]]
+text = '''cat ~/.claude/settings.json'''
+note = "Reading is not writing."
+
+[[false_positive]]
+text = '''echo '{}' > ./.claude/settings.json'''
+note = "Project-level settings are reviewed with the repository."

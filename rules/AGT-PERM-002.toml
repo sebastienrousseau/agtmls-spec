@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-PERM-002"
+category = "permission_posture"
+severity = "high"
+title = "Destructive command pre-approved"
+scope = "normalised"
+applies_to = ["*.json", "*.jsonc"]
+
+description = '''A `permissions.allow` entry that lets the agent run a deleting, uninstalling, disabling or force-pushing command without asking'''
+rationale = '''An allow entry skips the approval prompt for that command for good. When a tool pre-approves its own `remove`, `delete` or `uninstall` subcommands, an agent steered by a poisoned file can remove the audit hook or delete stored secrets without the user seeing a prompt. Seen in a published CLI that pre-approves its own hook-removal and secret-deletion subcommands. Leave destructive commands to the prompt.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)"allow"\s*:\s*\[[^\]]*"Bash\([^")]*\b(?:rm\b|uninstall|delete|destroy|drop|purge|remove|disable|reset\s+--hard|push\s+(?:-f|--force)|clean\s+-[a-z]*f)'''
+
+[[true_positive]]
+text = '''"permissions": {"allow": ["Bash(git status:*)", "Bash(acme hook remove:*)"]}'''
+
+[[true_positive]]
+text = '''"allow": ["Bash(rm -rf:*)"]'''
+
+[[true_positive]]
+text = '''"allow": ["Bash(acme secrets delete:*)"]'''
+
+[[false_positive]]
+text = '''"allow": ["Bash(git status:*)", "Bash(npm test:*)"]'''
+note = "Read-only and test commands."
+
+[[false_positive]]
+text = '''"deny": ["Bash(rm -rf:*)"]'''
+note = "A deny entry is the safe direction."
+
+[[false_positive]]
+text = '''"allow": ["Read", "Bash(git log:*)"]'''
+note = "Nothing destructive."
