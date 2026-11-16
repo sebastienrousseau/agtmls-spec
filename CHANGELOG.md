@@ -7,6 +7,23 @@ This specification versions independently of any implementation, and
 deliberately more slowly. Rule identifiers are permanent and are never reused,
 including after withdrawal.
 
+## [Unreleased]
+
+### Added
+
+- AGT-MCP-002, "MCP server launched through an unpinned package runner": an
+  MCP server configured as `"command": "npx", "args": ["-y", "pkg@latest"]`
+  (or `bunx`, `uvx`, `pipx`, `pnpm dlx`, with no exact version) is fetched
+  and started with the agent's rights at every session. AGT-SUPPLY-001
+  reads a command line written as one string and missed this split form.
+  Two corpus cases: the unpinned server is detected, the pinned one is not.
+
+### Changed
+
+- AGT-HOOK-002 now requires an argument after the runner inside the command
+  string. A hook carries its whole command line there; an MCP server's bare
+  launcher (`"command": "npx"`) is not a hook, and was reported as one.
+
 ## [0.0.3] - 2026-11-15
 
 ### Added

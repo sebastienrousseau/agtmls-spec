@@ -1,0 +1,48 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-MCP-002"
+category = "supply_chain"
+severity = "medium"
+title = "MCP server launched through an unpinned package runner"
+scope = "normalised"
+applies_to = ["*.json", "*.md", "*.yaml", "*.yml", "*.toml"]
+
+description = '''MCP server started by a package runner (npx -y, bunx, uvx, pipx, pnpm dlx) with no exact version, or with @latest'''
+rationale = '''An MCP server configured as {"command": "npx", "args": ["-y", "pkg@latest"]} is fetched and started with the agent's rights at every session, whatever the registry serves that day. AGT-SUPPLY-001 reads a command line written as one string and misses this split form; AGT-HOOK-002 used to fire on it under the wrong name. Seen in a published skill (`npx -y chrome-devtools-mcp@latest`). Pin to an exact version. Limit: the pattern reads "command" before "args", the order every documented config uses.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)"command"\s*:\s*"(?:bunx|uvx|pipx|pnpm)"\s*,\s*"args"\s*:\s*\[\s*(?:"(?:-[-\w]+|dlx|run)"\s*,\s*)*"(?:@[\w.-]+/)?[A-Za-z0-9_][\w.-]*(?:@latest)?"|"command"\s*:\s*"npx"\s*,\s*"args"\s*:\s*\[\s*(?:"-[-\w]+"\s*,\s*)*"(?:-y|--yes)"\s*,\s*(?:"-[-\w]+"\s*,\s*)*"(?:@[\w.-]+/)?[A-Za-z0-9_][\w.-]*(?:@latest)?"|"command"\s*:\s*"npx"\s*,\s*"args"\s*:\s*\[\s*(?:"-[-\w]+"\s*,\s*)*"(?:@[\w.-]+/)?[A-Za-z0-9_][\w.-]*@latest"'''
+
+[[true_positive]]
+text = '''"command": "npx", "args": ["-y", "chrome-devtools-mcp@latest", "--isolated"]'''
+
+[[true_positive]]
+text = '''"command": "npx", "args": ["--yes", "@scope/some-server"]'''
+
+[[true_positive]]
+text = '''"command": "uvx", "args": ["mcp-server-fetch"]'''
+
+[[true_positive]]
+text = '''"command": "npx", "args": ["some-server@latest"]'''
+
+[[false_positive]]
+text = '''"command": "npx", "args": ["-y", "@scope/some-server@1.4.2"]'''
+note = "An exact version is a pin."
+
+[[false_positive]]
+text = '''"command": "uvx", "args": ["mcp-server-fetch==0.6.2"]'''
+note = "An exact version is a pin."
+
+[[false_positive]]
+text = '''"command": "npx", "args": ["some-server"]'''
+note = "Without -y, npx asks before installing a package it does not have, as AGT-SUPPLY-001 treats it."
+
+[[false_positive]]
+text = '''"command": "node", "args": ["./server.js"]'''
+note = "A local script, not a package runner."
