@@ -108,6 +108,10 @@ worse than saying nothing, and it is the part most likely to change.
 This specification versions independently of any implementation, and
 deliberately more slowly. Implementations declare a compatible range.
 
+The repository's release number (CITATION.cff) is not this
+version: it moves in lockstep with the AgtMLS family, one release for
+every member. The format version (`spec_version`) follows the rules below.
+
 - **Patch** — editorial only; no behaviour change.
 - **Minor** — new rules, new optional fields, new corpus cases. Backwards
   compatible for readers.

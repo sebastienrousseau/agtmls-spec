@@ -3,11 +3,19 @@
 
 # Changelog
 
-This specification versions independently of any implementation, and
-deliberately more slowly. Rule identifiers are permanent and are never reused,
-including after withdrawal.
+The format version (`spec_version`) changes independently of any
+implementation, and deliberately more slowly. Repository releases move in
+lockstep with the AgtMLS family. Rule identifiers are permanent and are
+never reused, including after withdrawal.
 
 ## [Unreleased]
+
+## [0.0.35] - 2026-11-17
+
+**In lockstep with the AgtMLS family.** From this release every member of
+the family (agtmls, agtmls-spec, agtmls-core, agtmls-wasm, agtmls-mcp,
+agtmls-lsp, agtmls-action, agtmls-scorecard) releases at one version; this
+repository moves from 0.0.3 to 0.0.35. The format version is unchanged.
 
 ### Added
 
