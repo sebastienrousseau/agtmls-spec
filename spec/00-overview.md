@@ -63,6 +63,10 @@ POSIX-style with `/` separators regardless of host platform.
 This specification versions independently of any implementation, and
 deliberately more slowly.
 
+The repository's release number (CITATION.cff) is not this
+version: it moves in lockstep with the AgtMLS family, one release for
+every member. The format version (`spec_version`) follows the rules below.
+
 - **Patch** — editorial only.
 - **Minor** — new rules, new optional fields, new corpus cases; backwards
   compatible for readers.
