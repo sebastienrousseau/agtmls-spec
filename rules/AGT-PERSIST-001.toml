@@ -1,0 +1,44 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-PERSIST-001"
+category = "unsafe_execution"
+severity = "high"
+title = "Schedules itself to run again"
+scope = "normalised"
+applies_to = ["*.md", "*.sh", "*.bash", "*.zsh", "*.ps1", "*.py", "*.js", "*.mjs", "*.cjs", "*.ts", "*.json", "*.yaml", "*.yml", "*.toml", "executable"]
+
+description = '''A crontab install, a launchd or systemd user unit enabled, a Windows scheduled task created, or an `--auto-adopt` flag that applies changes without review'''
+rationale = '''A skill or installer that schedules itself keeps running after the session that installed it, with nobody watching, and keeps doing so after the skill is removed. `--auto-adopt` is the same shape in a self-improvement loop: changes land without review. Seen in a published skill that schedules a nightly run that rewrites its own instructions.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)\|\s*crontab\b|\bcrontab\s+(?:-e\b|[\w./~$"'][^\s|;&]*)|\blaunchctl\s+(?:load|bootstrap|enable|submit)\b|\bsystemctl\s+--user\s+(?:enable|start)\b|\bschtasks(?:\.exe)?\s+/create\b|--auto-adopt\b'''
+
+[[true_positive]]
+text = '''(crontab -l 2>/dev/null; echo "0 3 * * * ~/bin/sync") | crontab -'''
+
+[[true_positive]]
+text = '''launchctl load ~/Library/LaunchAgents/com.example.sync.plist'''
+
+[[true_positive]]
+text = '''systemctl --user enable --now skill-sync.timer'''
+
+[[true_positive]]
+text = '''Run the optimiser nightly with --auto-adopt so improvements land without review.'''
+
+[[false_positive]]
+text = '''crontab -l'''
+note = "Listing schedules nothing."
+
+[[false_positive]]
+text = '''systemctl --user status skill-sync.timer'''
+note = "Reading a unit's status enables nothing."
+
+[[false_positive]]
+text = '''launchctl list | grep example'''
+note = "Listing schedules nothing."

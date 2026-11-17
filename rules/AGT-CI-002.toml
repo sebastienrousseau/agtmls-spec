@@ -1,0 +1,43 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-CI-002"
+category = "supply_chain"
+severity = "high"
+title = "Secret handed to an action on a mutable ref"
+scope = "normalised"
+applies_to = ["*.yml", "*.yaml"]
+
+description = '''A step that uses an action at a tag, branch or short SHA and passes it a `${{ secrets.* }}` value'''
+rationale = '''A secret passed in `with:` or `env:` goes to whatever code the action's tag points at when the job runs. A compromised or retagged action reads it, as tj-actions/changed-files did in 2025. Pin the action to a full commit. Limit: the secret must follow the `uses:` line within the same step (no `- ` step marker between them), in the usual key order.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)uses:\s*["']?[\w.-]+/[\w./-]+@(?:[^\s"'#]*[^0-9a-f\s"'#][^\s"'#]*|[0-9a-f]{1,39})(?:[\s"'#]|$)(?:[^-]|-\S){0,400}?\$\{\{\s*secrets\.'''
+
+[[true_positive]]
+text = '''- uses: some-org/deploy-action@v2
+  with:
+    api_key: ${{ secrets.API_KEY }}'''
+
+[[true_positive]]
+text = '''- uses: anthropics/claude-code-action@beta
+  with:
+    anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}'''
+
+[[false_positive]]
+text = '''- uses: some-org/deploy-action@8a9b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b
+  with:
+    api_key: ${{ secrets.API_KEY }}'''
+note = "Pinned to a commit."
+
+[[false_positive]]
+text = '''- uses: actions/checkout@v4
+- uses: some-org/deploy-action@8a9b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b
+  with:
+    api_key: ${{ secrets.API_KEY }}'''
+note = "The secret belongs to the next, pinned step."

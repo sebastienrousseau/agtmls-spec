@@ -1,0 +1,34 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-CI-004"
+category = "permission_posture"
+severity = "high"
+title = "Agent action open to any user or bot"
+scope = "normalised"
+applies_to = ["*.yml", "*.yaml"]
+
+description = '''An agent action input `allowed_non_write_users: "*"` or `allowed_bots: "*"`'''
+rationale = '''These inputs widen who may trigger the agent from repository collaborators to anyone who can open an issue or comment, and to any bot. The agent then acts with the job's token on a stranger's instructions. Name the users or bots, or gate on author_association. Seen in claude-code-action's documented inputs.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)\ballowed_(?:non_write_users|bots)\s*:\s*["']\*["']'''
+
+[[true_positive]]
+text = '''allowed_non_write_users: "*"'''
+
+[[true_positive]]
+text = '''allowed_bots: '*'  # any bot'''
+
+[[false_positive]]
+text = '''allowed_bots: "dependabot[bot]"'''
+note = "A named bot."
+
+[[false_positive]]
+text = '''allowed_non_write_users: "octocat"'''
+note = "A named user."

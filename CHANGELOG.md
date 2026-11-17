@@ -17,6 +17,57 @@ including after withdrawal.
   and started with the agent's rights at every session. AGT-SUPPLY-001
   reads a command line written as one string and missed this split form.
   Two corpus cases: the unpinned server is detected, the pinned one is not.
+- Eleven pattern rules for agent configuration and the content around it,
+  each with true- and false-positive examples and two corpus cases (a
+  detection and its false-positive guard; 87 cases):
+  - AGT-HOOK-006: a command hook on every prompt, tool call or session
+    with no matcher.
+  - AGT-HOOK-007: a command that writes into the user's own agent settings
+    or instruction files (`~/.claude/settings.json`, `~/.codex/config.toml`).
+  - AGT-MCP-003: a remote MCP server over plain HTTP to a named host, or
+    with an empty URL. Loopback is not flagged.
+  - AGT-MCP-004: an MCP server started as inline code (`node -e`,
+    `python -c`) or from two or more directories above the repository.
+  - AGT-PERSIST-001: a crontab install, a launchd or systemd user unit
+    enabled, a scheduled task created, or `--auto-adopt`.
+  - AGT-SUPPRESS-001: a suppression marker for another code or secret
+    scanner (`# nosec`, `nosemgrep`, `gitleaks:allow`, `NOSONAR`, ...).
+  - AGT-RENDER-001: an instruction to an agent inside an HTML comment or an
+    image's alt text.
+  - AGT-ATTR-001: an instruction to remove AI attribution from commits or
+    pull requests.
+  - AGT-INST-001: `rm -rf` under the user's own agent directories.
+  - AGT-SUPPLY-004: a Claude Code marketplace or plugin source added by
+    repository name with no pinned revision.
+  - AGT-PERM-002: a `permissions.allow` entry that pre-approves a deleting,
+    uninstalling, disabling or force-pushing command.
+- AGT-SCAN-002, structural: an in-source suppression that suppressed
+  nothing in the audit. An implementation without suppressions has nothing
+  to report.
+- Rule classes `PERM`, `PERSIST`, `INST`, `RENDER`, `SUPPRESS` and `ATTR`
+  in 4.2, and categories `scan_evasion` and `attribution`.
+- Five workflow rules, `*.yml` and `*.yaml`:
+  - AGT-CI-001: a coding-agent action used at a tag, branch or short SHA.
+  - AGT-CI-002: a secret handed to any action on a mutable ref, in the
+    same step.
+  - AGT-CI-003: `pull_request_target` or `issue_comment` that checks out
+    the pull request head.
+  - AGT-CI-004: `allowed_non_write_users: "*"` or `allowed_bots: "*"`.
+  - AGT-CI-005: `id-token: write`, `contents: write` or `write-all` on
+    those triggers.
+
+  Eight corpus cases (95). Permission-bypass flags in agent arguments were
+  planned as a sixth and are already AGT-EXEC-006 and AGT-PERM-001, which
+  read `*.yml`.
+- Class `CI` in 4.2.
+
+### Changed (before release)
+
+- AGT-ATTR-001 matches line by line (`scope = "raw"`), and its verb must
+  open a line or follow a full stop, colon or dash: prose describing the
+  instruction ("flags instructions to strip AI attribution") matched.
+- AGT-SUPPLY-004 no longer reads a relative `url` or `repo` (`"./"`) as an
+  unpinned remote.
 
 ### Changed
 

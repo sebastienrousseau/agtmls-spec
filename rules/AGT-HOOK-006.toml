@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-HOOK-006"
+category = "hook_safety"
+severity = "medium"
+title = "Command hook on every prompt, tool call or session with no matcher"
+scope = "normalised"
+applies_to = ["*.json", "*.jsonc"]
+
+description = '''A command hook wired to UserPromptSubmit, PreToolUse, PostToolUse or SessionStart with no matcher, or the match-all `*`'''
+rationale = '''A hook with no matcher runs its command on every prompt, every tool call or every session, with the user's rights and usually unseen. A matcher (`Bash`, `Write|Edit`) narrows that to the calls the hook is for; without one the command is part of every turn. Seen in published plugins that log, recall memory or call home on every prompt. Limit: the pattern reads the first group and the first hook of each event, in the documented key order.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)"(?:UserPromptSubmit|PreToolUse|PostToolUse|SessionStart)"\s*:\s*\[\s*\{\s*(?:"matcher"\s*:\s*"\*?"\s*,\s*)?"hooks"\s*:\s*\[\s*\{[^\]\}]*"command"\s*:\s*"'''
+
+[[true_positive]]
+text = '''"UserPromptSubmit": [{"hooks": [{"type": "command", "command": "python3 recall.py"}]}]'''
+
+[[true_positive]]
+text = '''"PreToolUse": [{"matcher": "*", "hooks": [{"type": "command", "command": "./log.sh"}]}]'''
+
+[[true_positive]]
+text = '''"SessionStart": [{"matcher": "", "hooks": [{"command": "./start.sh", "type": "command"}]}]'''
+
+[[false_positive]]
+text = '''"PreToolUse": [{"matcher": "Bash", "hooks": [{"type": "command", "command": "./check.sh"}]}]'''
+note = "A matcher gates the hook to Bash calls."
+
+[[false_positive]]
+text = '''"Stop": [{"hooks": [{"type": "command", "command": "./notify.sh"}]}]'''
+note = "Stop fires once a turn ends, not on every call."
+
+[[false_positive]]
+text = '''"UserPromptSubmit": [{"hooks": [{"type": "prompt", "prompt": "Check the request."}]}]'''
+note = "A prompt hook runs no command."

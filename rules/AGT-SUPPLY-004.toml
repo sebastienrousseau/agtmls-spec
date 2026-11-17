@@ -1,0 +1,45 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-SUPPLY-004"
+category = "supply_chain"
+severity = "medium"
+title = "Plugin source added without a pinned revision"
+scope = "normalised"
+applies_to = ["*.md", "*.sh", "*.bash", "*.zsh", "*.ps1", "*.py", "*.js", "*.mjs", "*.cjs", "*.ts", "*.json", "*.yaml", "*.yml", "*.toml", "executable"]
+
+description = '''A Claude Code marketplace or plugin source named as owner/repo with no commit, tag or ref'''
+rationale = '''A marketplace or plugin added by repository name follows that repository's default branch: whatever its owner pushes next reaches every user at the next update, unreviewed. Pinning to a commit is the first step of vetting. Seen in published READMEs and marketplace manifests. Limit: the JSON form is read in the documented key order.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)(?:/plugin|\bclaude\s+plugin)\s+marketplace\s+add\s+[\w.-]+/[\w.-]+(?:\s|$|["'`])|"source"\s*:\s*\{\s*"source"\s*:\s*"(?:github|git|url)"\s*,\s*"(?:repo|url)"\s*:\s*"[^".][^"]*"\s*\}'''
+
+[[true_positive]]
+text = '''/plugin marketplace add acme/agent-plugins'''
+
+[[true_positive]]
+text = '''"source": {"source": "github", "repo": "acme/review-plugin"}'''
+
+[[true_positive]]
+text = '''claude plugin marketplace add acme/agent-plugins'''
+
+[[false_positive]]
+text = '''/plugin marketplace add acme/agent-plugins@4f2c9e1'''
+note = "Pinned."
+
+[[false_positive]]
+text = '''"source": {"source": "github", "repo": "acme/review-plugin", "sha": "4f2c9e1d0a"}'''
+note = "Pinned to a commit."
+
+[[false_positive]]
+text = '''"source": "./plugins/review"'''
+note = "A path inside the repository."
+
+[[false_positive]]
+text = '''"source": {"source": "url", "url": "./"}'''
+note = "The repository itself, as a relative path."

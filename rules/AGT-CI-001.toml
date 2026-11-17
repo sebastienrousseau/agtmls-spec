@@ -1,0 +1,37 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-CI-001"
+category = "supply_chain"
+severity = "high"
+title = "Agent action on a mutable ref"
+scope = "normalised"
+applies_to = ["*.yml", "*.yaml"]
+
+description = '''A coding-agent action (claude-code-action, codex-action, run-gemini-cli, under any owner) used at a tag, branch or short SHA rather than a full commit'''
+rationale = '''An agent action runs a model with the job's token and tools on whatever the action's owner points that tag or branch at next. A moved tag changes what the agent may do in every repository that uses it, at its next run. Pin to a 40-hex commit, with the version in a comment. Seen in the reviewed repositories' workflows and README examples.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)uses:\s*["']?[\w.-]+/(?:claude-code(?:-base)?-action|codex-action|run-gemini-cli)(?:/[\w./-]+)?@(?:[^\s"'#]*[^0-9a-f\s"'#][^\s"'#]*|[0-9a-f]{1,39})(?:[\s"'#]|$)'''
+
+[[true_positive]]
+text = '''uses: anthropics/claude-code-action@v1'''
+
+[[true_positive]]
+text = '''uses: "openai/codex-action@main"'''
+
+[[true_positive]]
+text = '''uses: google-github-actions/run-gemini-cli@a1b2c3d'''
+
+[[false_positive]]
+text = '''uses: anthropics/claude-code-action@8a9b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b # v1'''
+note = "Pinned to a commit."
+
+[[false_positive]]
+text = '''uses: actions/checkout@v4'''
+note = "Not an agent action; AGT-CI-002 covers secrets passed to it."

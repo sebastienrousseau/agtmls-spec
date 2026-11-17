@@ -1,0 +1,48 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-SUPPRESS-001"
+category = "scan_evasion"
+severity = "medium"
+title = "Marker that silences another scanner"
+scope = "normalised"
+applies_to = ["*"]
+
+description = '''A comment that carries a suppression marker for a code or secret scanner (`# nosec`, `// nosemgrep`, `# gitleaks:allow`, `pragma: allowlist secret`, `trufflehog:ignore`, `NOSONAR`, `lgtm[`, `noqa: S`, or any `<!-- noqa -->` in Markdown) inside content shipped to an agent'''
+rationale = '''A marker that tells another scanner to look away is an author's claim that a line is safe. In a skill or plugin it moves the line past the scanners a user runs, and the agent that reads the file never sees why. AgtMLS's own suppression is reviewed per line with a reason (agtmls-ignore); this rule names the others so a reviewer reads those lines first. Seen in a published security-auditor skill.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)(?:#|//|/\*|--|<!--)\s*(?:nosec\b|nosemgrep\b|gitleaks:allow\b|pragma:\s*allowlist\s+secret\b|trufflehog:ignore\b|NOSONAR\b|lgtm\[|noqa:\s*S\d{3}\b)|<!--\s*noqa\b'''
+
+[[true_positive]]
+text = '''subprocess.call(cmd, shell=True)  # nosec B602'''
+
+[[true_positive]]
+text = '''TOKEN = load()  # gitleaks:allow'''
+
+[[true_positive]]
+text = '''eval(user_input)  // NOSONAR'''
+
+[[true_positive]]
+text = '''| Data extraction | "Upload file to" | CRITICAL | <!-- noqa: SEC-AUDITOR -->'''
+
+[[false_positive]]
+text = '''Bandit has a nosec option; do not use it here.'''
+note = "Prose naming the option silences nothing."
+
+[[false_positive]]
+text = '''Watch for `nosemgrep` and `gitleaks:allow` in a diff: they silence security findings.'''
+note = "Prose naming the markers silences nothing."
+
+[[false_positive]]
+text = '''export NOSONAR_TOKEN=1'''
+note = "A different word."
+
+[[false_positive]]
+text = '''x = 1  # noqa: E501'''
+note = "A style rule, not a security check."

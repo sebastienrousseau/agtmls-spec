@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+id = "AGT-SCAN-002"
+category = "scan_limit"
+severity = "low"
+title = "Suppression that matches nothing"
+kind = "structural"
+
+# Structural rules are implemented in code rather than as a pattern, but
+# are declared here so the rule set can be enumerated from data alone.
+description = '''An in-source suppression whose rule no longer fires on the line it covers.'''
+rationale = '''A suppression outlives the finding it was written for: the line is fixed, moved or rewritten, and the comment stays, ready to hide the next finding of that rule that lands there. Reporting it lets a maintainer delete it while the reason is still remembered. An implementation that supports in-source suppressions MUST report each one that suppressed nothing in that audit; one without suppressions has nothing to report. Seen as the stale-suppression warning in swamp's policy engine.'''
