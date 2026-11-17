@@ -1,0 +1,46 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-CI-005"
+category = "permission_posture"
+severity = "medium"
+title = "Write token on an untrusted trigger"
+scope = "normalised"
+applies_to = ["*.yml", "*.yaml"]
+
+description = '''A workflow on `pull_request_target` or `issue_comment` that grants `id-token: write`, `contents: write`, or `write-all`'''
+rationale = '''These triggers run for outsiders' pull requests and comments. With contents: write the job can push to the repository; with id-token: write it can mint cloud credentials through OIDC. An agent step steered by the outsider's text uses whichever it is given. Grant them in a separate job behind a trusted trigger. Limit: the trigger must be named before the permission, as `on:` usually is.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)\b(?:pull_request_target|issue_comment)\b[\s\S]*?(?:\b(?:id-token|contents)\s*:\s*write\b|\bpermissions\s*:\s*write-all\b)'''
+
+[[true_positive]]
+text = '''on:
+  issue_comment:
+permissions:
+  contents: write'''
+
+[[true_positive]]
+text = '''on: [pull_request_target]
+permissions:
+  id-token: write'''
+
+[[false_positive]]
+text = '''on:
+  push:
+permissions:
+  contents: write'''
+note = "A push comes from someone with write access."
+
+[[false_positive]]
+text = '''on:
+  pull_request_target:
+permissions:
+  contents: read
+  pull-requests: write'''
+note = "Reads contents; commenting needs only pull-requests: write."

@@ -41,6 +41,7 @@ agree about `\s`, case folding and greediness. They do not, reliably — see 4.6
 | `RENDER` | Instructions in text a rendered page hides | MEDIUM |
 | `SUPPRESS` | Markers that silence another scanner | MEDIUM |
 | `ATTR` | Instructions to remove AI attribution | LOW |
+| `CI` | Workflows that hand an agent or a secret to code they do not pin or trust | HIGH |
 
 Identifiers are permanent. A withdrawn rule MUST be marked `withdrawn = true`
 and its identifier MUST NOT be reused.

@@ -8,16 +8,16 @@ id = "AGT-ATTR-001"
 category = "attribution"
 severity = "low"
 title = "Instruction to remove AI attribution"
-scope = "normalised"
+scope = "raw"
 applies_to = ["*"]
 
 description = '''An instruction to remove, omit or never write AI attribution (Co-Authored-By, Assisted-by, "Generated with ...") in commits or pull requests, or never to mention that an AI took part'''
-rationale = '''Attribution trailers are how a reviewer, and the project's licence and contribution policy, know an agent wrote a change. A skill that tells the agent to strip them makes every change it touches look hand-written. Seen in a published persona skill. Moving attribution from a PR body to a commit trailer is not this rule: the attribution survives.'''
+rationale = '''Attribution trailers are how a reviewer, and the project's licence and contribution policy, know an agent wrote a change. A skill that tells the agent to strip them makes every change it touches look hand-written. Seen in a published persona skill. Moving attribution from a PR body to a commit trailer is not this rule: the attribution survives. The verb must open a line (after an optional bullet or list number) or follow a full stop, colon or dash, so prose describing such an instruction is not one. Limit: matched line by line, so an instruction split across two lines is missed.'''
 
 # (?i) is inline, not a host-language compile flag: the flag would not
 # survive export and the two implementations would disagree on case.
-# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
-pattern = '''(?i)\b(?:remove|strip|omit|drop|delete|never (?:add|include|write)|do not (?:add|include|write)|don't (?:add|include|write))\b[^.]{0,60}?\b(?:co-authored-by|assisted-by|generated with (?:claude|codex|an? ai)|ai attribution|ai co-?author)|\b(?:never|do not|don't) (?:mention|credit|reference|disclose) (?:that )?(?:claude|codex|ai|an? ai|the (?:ai|assistant|agent))\b[^.]{0,40}?\b(?:commits?|pull requests?|PRs?)\b'''
+# scope = "raw": matched against the decoded content as written, so a line start is a line start.
+pattern = '''(?i)(?:(?m:^)[ \t]*(?:[-*>+][ \t]+|\d+[.)][ \t]+)?|[.:;!?\u2014-][ \t]+)(?:remove|strip|omit|drop|delete|never (?:add|include|write)|do not (?:add|include|write)|don't (?:add|include|write))\b[^.\n]{0,60}?\b(?:co-authored-by|assisted-by|generated with (?:claude|codex|an? ai)|ai attribution|ai co-?author)|(?:(?m:^)[ \t]*(?:[-*>+][ \t]+|\d+[.)][ \t]+)?|[.:;!?\u2014-][ \t]+)(?:never|do not|don't) (?:mention|credit|reference|disclose) (?:that )?(?:claude|codex|ai|an? ai|the (?:ai|assistant|agent))\b[^.\n]{0,40}?\b(?:commits?|pull requests?|PRs?)\b'''
 
 [[true_positive]]
 text = '''Never add a Co-Authored-By trailer for Claude to commits.'''
@@ -27,6 +27,9 @@ text = '''Strip any "Generated with Claude Code" line before committing.'''
 
 [[true_positive]]
 text = '''Do not mention that an AI wrote the change in commit messages.'''
+
+[[true_positive]]
+text = '''6. **No trailers** — never add AI attribution to commits.'''
 
 [[false_positive]]
 text = '''Add a Co-Authored-By trailer when an agent helped.'''
@@ -39,3 +42,7 @@ note = "Not attribution."
 [[false_positive]]
 text = '''Record the agent's part in an Assisted-by trailer.'''
 note = "Adding attribution."
+
+[[false_positive]]
+text = '''The rules flag instructions to strip AI attribution from commits.'''
+note = "Prose describing the instruction, not giving it."

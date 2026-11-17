@@ -46,6 +46,28 @@ including after withdrawal.
   to report.
 - Rule classes `PERM`, `PERSIST`, `INST`, `RENDER`, `SUPPRESS` and `ATTR`
   in 4.2, and categories `scan_evasion` and `attribution`.
+- Five workflow rules, `*.yml` and `*.yaml`:
+  - AGT-CI-001: a coding-agent action used at a tag, branch or short SHA.
+  - AGT-CI-002: a secret handed to any action on a mutable ref, in the
+    same step.
+  - AGT-CI-003: `pull_request_target` or `issue_comment` that checks out
+    the pull request head.
+  - AGT-CI-004: `allowed_non_write_users: "*"` or `allowed_bots: "*"`.
+  - AGT-CI-005: `id-token: write`, `contents: write` or `write-all` on
+    those triggers.
+
+  Eight corpus cases (95). Permission-bypass flags in agent arguments were
+  planned as a sixth and are already AGT-EXEC-006 and AGT-PERM-001, which
+  read `*.yml`.
+- Class `CI` in 4.2.
+
+### Changed (before release)
+
+- AGT-ATTR-001 matches line by line (`scope = "raw"`), and its verb must
+  open a line or follow a full stop, colon or dash: prose describing the
+  instruction ("flags instructions to strip AI attribution") matched.
+- AGT-SUPPLY-004 no longer reads a relative `url` or `repo` (`"./"`) as an
+  unpinned remote.
 
 ### Changed
 

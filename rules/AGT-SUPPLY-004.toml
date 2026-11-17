@@ -17,7 +17,7 @@ rationale = '''A marketplace or plugin added by repository name follows that rep
 # (?i) is inline, not a host-language compile flag: the flag would not
 # survive export and the two implementations would disagree on case.
 # scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
-pattern = '''(?i)(?:/plugin|\bclaude\s+plugin)\s+marketplace\s+add\s+[\w.-]+/[\w.-]+(?:\s|$|["'`])|"source"\s*:\s*\{\s*"source"\s*:\s*"(?:github|git|url)"\s*,\s*"(?:repo|url)"\s*:\s*"[^"]+"\s*\}'''
+pattern = '''(?i)(?:/plugin|\bclaude\s+plugin)\s+marketplace\s+add\s+[\w.-]+/[\w.-]+(?:\s|$|["'`])|"source"\s*:\s*\{\s*"source"\s*:\s*"(?:github|git|url)"\s*,\s*"(?:repo|url)"\s*:\s*"[^".][^"]*"\s*\}'''
 
 [[true_positive]]
 text = '''/plugin marketplace add acme/agent-plugins'''
@@ -39,3 +39,7 @@ note = "Pinned to a commit."
 [[false_positive]]
 text = '''"source": "./plugins/review"'''
 note = "A path inside the repository."
+
+[[false_positive]]
+text = '''"source": {"source": "url", "url": "./"}'''
+note = "The repository itself, as a relative path."

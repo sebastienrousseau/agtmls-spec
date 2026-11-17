@@ -1,0 +1,61 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Rules are data, not code: every implementation loads this same file, so
+# adding a rule never means writing the same pattern twice in two languages.
+
+id = "AGT-CI-003"
+category = "unsafe_execution"
+severity = "high"
+title = "Untrusted trigger checks out the pull request's code"
+scope = "normalised"
+applies_to = ["*.yml", "*.yaml"]
+
+description = '''A workflow on `pull_request_target` or `issue_comment` that checks out the pull request head (`github.event.pull_request.head.*`, or `refs/pull/<n>/head`)'''
+rationale = '''pull_request_target and issue_comment run with the base repository's secrets and a write token. Checking out the pull request head then hands an outsider's code, and its agent instructions, to that job: build scripts, CLAUDE.md, .mcp.json and hooks all run or steer with those rights. This is the pattern claude-code-action documents defending against. Limit: the trigger must be named before the checkout, as `on:` always is.'''
+
+# (?i) is inline, not a host-language compile flag: the flag would not
+# survive export and the two implementations would disagree on case.
+# scope = "normalised": Matched against the whitespace-normalised document so a payload split across a newline cannot evade it.
+pattern = '''(?i)\b(?:pull_request_target|issue_comment)\b[\s\S]*?ref:\s*["']?(?:\$\{\{\s*github\.event\.pull_request\.head\.(?:sha|ref)|refs/pull/\$\{\{)'''
+
+[[true_positive]]
+text = '''on:
+  pull_request_target:
+jobs:
+  review:
+    steps:
+      - uses: actions/checkout@8a9b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}'''
+
+[[true_positive]]
+text = '''on:
+  issue_comment:
+    types: [created]
+jobs:
+  a:
+    steps:
+      - uses: actions/checkout@8a9b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b
+        with:
+          ref: refs/pull/${{ github.event.issue.number }}/head'''
+
+[[false_positive]]
+text = '''on:
+  pull_request:
+jobs:
+  a:
+    steps:
+      - uses: actions/checkout@8a9b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}'''
+note = "pull_request runs without the base repository's secrets."
+
+[[false_positive]]
+text = '''on:
+  pull_request_target:
+jobs:
+  a:
+    steps:
+      - uses: actions/checkout@8a9b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b'''
+note = "Checks out the base branch."
